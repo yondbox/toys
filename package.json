@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "biome check",
     "format": "biome format --write",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "new-toy": "node scripts/new-toy.mjs"
   },
   "dependencies": {
     "next": "16.2.9",
