@@ -1,0 +1,13 @@
+# Git hooks（Lefthook）
+# pre-commit は check-only。自動修正はしない（部分ステージの巻き込みを避ける）。
+# 整形はエディタの保存時整形か pnpm format で行う。
+# 緊急時の回避: git commit --no-verify（多用しない）
+
+pre-commit:
+  commands:
+    biome-check:
+      run: >
+        pnpm exec biome check
+        --no-errors-on-unmatched
+        --files-ignore-unknown=true
+        {staged_files}
