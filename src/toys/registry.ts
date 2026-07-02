@@ -8,4 +8,12 @@ export type Toy = {
   createdAt: string;
 };
 
-export const toys: Toy[] = [];
+export const toys: Toy[] = [
+  {
+    slug: "counter",
+    title: "カウンター",
+    description: "ボタンで数を増減するだけの最小のおもちゃ。",
+    tags: ["sample"],
+    createdAt: "2026-07-02",
+  },
+];
