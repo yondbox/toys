@@ -38,6 +38,7 @@ pnpm build             # 本番ビルド（追加・変更後の確認）
 pnpm lint              # Biome チェック
 pnpm format            # Biome 自動整形
 pnpm typecheck         # 型チェック（tsc --noEmit）
+pnpm test:unit         # ユニットテスト（Vitest）
 pnpm new-toy <slug>    # 新しいおもちゃの雛形生成
 
 ```
