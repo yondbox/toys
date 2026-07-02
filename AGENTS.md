@@ -37,5 +37,5 @@ pnpm dev               # 開発サーバ
 pnpm build             # 本番ビルド（追加・変更後の確認）
 pnpm lint              # Biome チェック
 pnpm format            # Biome 自動整形
-pnpm exec tsc --noEmit # 型チェック
+pnpm typecheck         # 型チェック（tsc --noEmit）
 ```
