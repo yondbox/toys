@@ -11,3 +11,8 @@ pre-commit:
         --no-errors-on-unmatched
         --files-ignore-unknown=true
         {staged_files}
+
+pre-push:
+  commands:
+    typecheck:
+      run: pnpm typecheck
