@@ -1,0 +1,10 @@
+purpose: portfolio
+quality_level: standard
+stability_preference: latest   # 推定: Next 16 / React 19 + React Compiler を採用済み
+deployment_target: vercel
+ai_automation_level: apply-after-approval
+auto_merge_policy: minor-and-patch   # Dependabot minor+patch を auto-merge 希望
+preserve_generator_defaults: true    # 推定: AGENTS.md の強い方針(pnpm/Biome のみ)を尊重
+notes:
+  - "既存の開発ハーネス(PR #1)を壊さない。差分は最小限。"
+  - "AGENTS.md がツール方針の正本。Prettier/ESLint は導入しない。"

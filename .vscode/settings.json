@@ -1,0 +1,77 @@
+{
+  // ワークスペース全体の既定フォーマッタを Biome にする。
+  "editor.defaultFormatter": "biomejs.biome",
+  // ファイル保存時に自動でフォーマットを実行する。
+  "editor.formatOnSave": true,
+  // 保存時に実行できるコードアクションを指定する。
+  "editor.codeActionsOnSave": {
+    // 保存時の import 整理は、明示的な保存操作のときだけ Biome で実行する。
+    "source.organizeImports.biome": "explicit",
+    // 保存時の自動修正は、明示的な保存操作のときだけ Biome で実行する。
+    "source.fixAll.biome": "explicit"
+  },
+  // ESLint 拡張機能による lint を無効にし、Biome と競合しないようにする。
+  "eslint.enable": false,
+  // Prettier 拡張機能による整形を無効にし、Biome と競合しないようにする。
+  "prettier.enable": false,
+  // TypeScript ファイルでは Biome をフォーマッタとして使う。
+  "[typescript]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  // TSX ファイルでは Biome をフォーマッタとして使う。
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  // JavaScript ファイルでは Biome をフォーマッタとして使う。
+  "[javascript]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  // JSX ファイルでは Biome をフォーマッタとして使う。
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  // JSON ファイルでは Biome をフォーマッタとして使う。
+  "[json]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  // JSONC ファイルでは Biome をフォーマッタとして使う。
+  "[jsonc]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  // CSS ファイルでは Biome をフォーマッタとして使う。
+  "[css]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  // VS Code の TypeScript サーバーに、ワークスペース内の TypeScript を使わせる。
+  "typescript.tsdk": "node_modules/typescript/lib",
+  // ワークスペース内の TypeScript SDK を使うかどうかの確認プロンプトを有効にする。
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  // Tailwind CSS v4 などの未知の CSS at-rule を VS Code の CSS lint で警告しない。
+  "css.lint.unknownAtRules": "ignore",
+  // Tailwind CSS 拡張機能がクラス名を検出するための追加正規表現を指定する。
+  "tailwindCSS.experimental.classRegex": [
+    // cva(...) の引数内に書いた Tailwind クラスを補完・検出対象にする。
+    ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
+    // cx(...) の引数内に書いた Tailwind クラスを補完・検出対象にする。
+    ["cx\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
+  ],
+  // エディタのクイック候補表示に関する設定を指定する。
+  "editor.quickSuggestions": {
+    // 文字列の中でも補完候補を表示する。
+    "strings": "on"
+  },
+  // 検索結果から除外するファイルやディレクトリを指定する。
+  "search.exclude": {
+    // 依存パッケージのディレクトリを検索対象から外す。
+    "**/node_modules": true,
+    // Next.js のビルド出力ディレクトリを検索対象から外す。
+    "**/.next": true,
+    // pnpm のロックファイルを検索対象から外す。
+    "**/pnpm-lock.yaml": true
+  },
+  // Explorer のファイル一覧から非表示にするファイルやディレクトリを指定する。
+  "files.exclude": {
+    // Next.js のビルド出力ディレクトリを Explorer で非表示にする。
+    "**/.next": true
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "changes": [
+    {
+      "path": "SECURITY.md",
+      "action": "create",
+      "risk": "low",
+      "category": "required",
+      "reason": "脆弱性の非公開報告方針・secrets 方針・依存更新方針を明示",
+      "pack": "security"
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "action": "create",
+      "risk": "low",
+      "category": "required",
+      "reason": "pnpm 開発手順と検証コマンド、AGENTS.md 参照を提供",
+      "pack": "docs"
+    },
+    {
+      "path": ".github/pull_request_template.md",
+      "action": "create",
+      "risk": "low",
+      "category": "required",
+      "reason": "既存 CI チェック(lint/typecheck/test/build)と整合した PR テンプレート",
+      "pack": "github"
+    },
+    {
+      "path": ".github/workflows/dependabot-auto-merge.yml",
+      "action": "create",
+      "risk": "medium",
+      "category": "recommended",
+      "reason": "minor+patch を gh pr merge --auto で自動マージ（要: auto-merge 有効化 + ブランチ保護）",
+      "pack": "github"
+    },
+    {
+      "path": "docs/branch-protection.md",
+      "action": "create",
+      "risk": "low",
+      "category": "recommended",
+      "reason": "必須ステータスチェック / ブランチ保護方針の記録",
+      "pack": "github"
+    },
+    {
+      "path": ".github/workflows/codeql.yml",
+      "action": "create",
+      "risk": "low",
+      "category": "optional",
+      "reason": "SAST（strict 化する場合）",
+      "pack": "security"
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+project:
+  type: web-app
+  description: "複数の小さな toy を 1 Next.js アプリに集約（Route Group 分割）"
+stack:
+  language: typescript
+  language_config: strict
+  framework: next.js
+  framework_version: "16.2.9"
+  ui: react
+  ui_version: "19.2.4"
+  react_compiler: true
+  styling: tailwindcss@4
+  runtime: node
+  runtime_version: ">=24"
+  package_manager: pnpm
+  package_manager_version: "10.34.4"
+quality:
+  formatter: biome
+  linter: biome
+  type_checker: tsc
+  unit_test: vitest
+  e2e_test: playwright
+  coverage: none
+  static_analysis: none
+ci_cd:
+  provider: github-actions
+  workflows:
+    - ci.yml (checks + e2e)
+  action_pinning: sha
+  permissions: contents-read
+  dependabot: true
+  codeql: false
+security:
+  env_policy: ".env* ignored, .env.example present"
+  secret_handling: none-detected
+  dependency_updates: dependabot
+  vulnerability_scanning: none
+  security_md: false
+ai:
+  agents_md: true
+  claude_md: true
+  copilot_instructions: true
+  gemini_md: false
+  skills:
+    - new-toy
+  hooks: lefthook
+  mcp: none-in-repo
+docs:
+  readme: true
+  contributing: false
+  security: false
+  pr_template: false
+  adr: false
+git_hooks:
+  tool: lefthook
+  pre_commit: biome check (staged)
+  commit_msg: commitlint
+  pre_push: typecheck + unit tests
+inferred_generator: create-next-app
