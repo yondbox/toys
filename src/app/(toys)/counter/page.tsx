@@ -19,7 +19,10 @@ export default function CounterPage() {
           カウンター
         </h1>
         <div className="mt-16 flex flex-col items-center gap-8">
-          <output className="text-7xl font-semibold tabular-nums text-black dark:text-zinc-50">
+          <output
+            aria-live="polite"
+            className="text-7xl font-semibold tabular-nums text-black dark:text-zinc-50"
+          >
             {count}
           </output>
           <div className="flex gap-3">
