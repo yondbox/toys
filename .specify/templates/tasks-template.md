@@ -9,9 +9,11 @@ description: "Task list template for feature implementation"
 
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
 
-**Tests**: The examples below include test tasks. Tests are OPTIONAL - only include them if explicitly requested in the feature specification.
+**Tests**: Behavior-changing slices MUST include tests at the narrowest useful level. Add Playwright
+coverage when component or unit tests cannot prove the user journey.
 
-**Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
+**Organization**: Tasks MUST be grouped into vertical user-story slices. Each slice includes all UI,
+behavior, data handling, tests, and documentation needed to deliver independently verifiable value.
 
 ## Format: `[ID] [P?] [Story] Description`
 
@@ -21,10 +23,11 @@ description: "Task list template for feature implementation"
 
 ## Path Conventions
 
-- **Single project**: `src/`, `tests/` at repository root
-- **Web app**: `backend/src/`, `frontend/src/`
-- **Mobile**: `api/src/`, `ios/src/` or `android/src/`
-- Paths shown below assume single project - adjust based on plan.md structure
+- **Toy-specific code and tests**: `src/app/(toys)/<slug>/`
+- **Shared UI**: `src/components/` only for stable UI used by multiple consumers
+- **Shared non-UI code**: `src/lib/` only for stable behavior used by multiple consumers
+- **Toy registry**: `src/toys/registry.ts` (updated only through `pnpm new-toy <slug>` for new toys)
+- **End-to-end tests**: `e2e/`
 
 <!--
   ============================================================================
@@ -41,34 +44,33 @@ description: "Task list template for feature implementation"
   - Tested independently
   - Delivered as an MVP increment
 
+  Do not create horizontal phases for all components, all state, or all tests. Keep those tasks
+  inside the user-story slice that consumes them. Shared setup is allowed only when unavoidable,
+  and each shared task must name the stories it unblocks.
+
   DO NOT keep these sample tasks in the generated tasks.md file.
   ============================================================================
 -->
 
-## Phase 1: Setup (Shared Infrastructure)
+## Phase 1: Setup (Minimal Shared Prerequisites)
 
-**Purpose**: Project initialization and basic structure
+**Purpose**: Only the unavoidable work that blocks more than one user-story slice
 
-- [ ] T001 Create project structure per implementation plan
-- [ ] T002 Initialize [language] project with [framework] dependencies
-- [ ] T003 [P] Configure linting and formatting tools
+- [ ] T001 Run `pnpm new-toy [slug]` to create the route and registry entry in [exact paths]
+- [ ] T002 [P] Add only the shared prerequisite required by [US1, US2] in [exact path]
 
 ---
 
-## Phase 2: Foundational (Blocking Prerequisites)
+## Phase 2: Foundational (Use Only When Truly Blocking)
 
 **Purpose**: Core infrastructure that MUST be complete before ANY user story can be implemented
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-Examples of foundational tasks (adjust based on your project):
+Examples of legitimate foundational tasks (remove this phase when none apply):
 
-- [ ] T004 Setup database schema and migrations framework
-- [ ] T005 [P] Implement authentication/authorization framework
-- [ ] T006 [P] Setup API routing and middleware structure
-- [ ] T007 Create base models/entities that all stories depend on
-- [ ] T008 Configure error handling and logging infrastructure
-- [ ] T009 Setup environment configuration management
+- [ ] T003 Define the external-service boundary required by [US1, US2] in [exact path]
+- [ ] T004 Configure the environment contract required by [US1, US2] in [exact path]
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -80,21 +82,19 @@ Examples of foundational tasks (adjust based on your project):
 
 **Independent Test**: [How to verify this story works on its own]
 
-### Tests for User Story 1 (OPTIONAL - only if tests requested) ⚠️
+### Tests for User Story 1
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T010 [P] [US1] Contract test for [endpoint] in tests/contract/test_[name].py
-- [ ] T011 [P] [US1] Integration test for [user journey] in tests/integration/test_[name].py
+- [ ] T005 [P] [US1] Add component behavior test in src/app/(toys)/[slug]/[feature].test.tsx
+- [ ] T006 [P] [US1] Add journey test in e2e/[slug].spec.ts when required by acceptance criteria
 
 ### Implementation for User Story 1
 
-- [ ] T012 [P] [US1] Create [Entity1] model in src/models/[entity1].py
-- [ ] T013 [P] [US1] Create [Entity2] model in src/models/[entity2].py
-- [ ] T014 [US1] Implement [Service] in src/services/[service].py (depends on T012, T013)
-- [ ] T015 [US1] Implement [endpoint/feature] in src/[location]/[file].py
-- [ ] T016 [US1] Add validation and error handling
-- [ ] T017 [US1] Add logging for user story 1 operations
+- [ ] T007 [P] [US1] Add focused [component or domain behavior] in src/app/(toys)/[slug]/[file].tsx
+- [ ] T008 [US1] Integrate [behavior] into src/app/(toys)/[slug]/page.tsx (depends on T007)
+- [ ] T009 [US1] Handle [named error or boundary] in src/app/(toys)/[slug]/[file].ts
+- [ ] T010 [US1] Verify [acceptance scenario] with [exact command or manual action]
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
 
@@ -106,17 +106,15 @@ Examples of foundational tasks (adjust based on your project):
 
 **Independent Test**: [How to verify this story works on its own]
 
-### Tests for User Story 2 (OPTIONAL - only if tests requested) ⚠️
+### Tests for User Story 2
 
-- [ ] T018 [P] [US2] Contract test for [endpoint] in tests/contract/test_[name].py
-- [ ] T019 [P] [US2] Integration test for [user journey] in tests/integration/test_[name].py
+- [ ] T011 [P] [US2] Add behavior test in src/app/(toys)/[slug]/[feature].test.tsx
 
 ### Implementation for User Story 2
 
-- [ ] T020 [P] [US2] Create [Entity] model in src/models/[entity].py
-- [ ] T021 [US2] Implement [Service] in src/services/[service].py
-- [ ] T022 [US2] Implement [endpoint/feature] in src/[location]/[file].py
-- [ ] T023 [US2] Integrate with User Story 1 components (if needed)
+- [ ] T012 [P] [US2] Add [complete behavior] in src/app/(toys)/[slug]/[file].tsx
+- [ ] T013 [US2] Integrate [behavior] into src/app/(toys)/[slug]/page.tsx
+- [ ] T014 [US2] Verify [acceptance scenario] with [exact command or manual action]
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
 
@@ -128,16 +126,15 @@ Examples of foundational tasks (adjust based on your project):
 
 **Independent Test**: [How to verify this story works on its own]
 
-### Tests for User Story 3 (OPTIONAL - only if tests requested) ⚠️
+### Tests for User Story 3
 
-- [ ] T024 [P] [US3] Contract test for [endpoint] in tests/contract/test_[name].py
-- [ ] T025 [P] [US3] Integration test for [user journey] in tests/integration/test_[name].py
+- [ ] T015 [P] [US3] Add behavior test in src/app/(toys)/[slug]/[feature].test.tsx
 
 ### Implementation for User Story 3
 
-- [ ] T026 [P] [US3] Create [Entity] model in src/models/[entity].py
-- [ ] T027 [US3] Implement [Service] in src/services/[service].py
-- [ ] T028 [US3] Implement [endpoint/feature] in src/[location]/[file].py
+- [ ] T016 [P] [US3] Add [complete behavior] in src/app/(toys)/[slug]/[file].tsx
+- [ ] T017 [US3] Integrate [behavior] into src/app/(toys)/[slug]/page.tsx
+- [ ] T018 [US3] Verify [acceptance scenario] with [exact command or manual action]
 
 **Checkpoint**: All user stories should now be independently functional
 
@@ -151,10 +148,10 @@ Examples of foundational tasks (adjust based on your project):
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] TXXX [P] Documentation updates in docs/
+- [ ] TXXX [P] Documentation updates in [exact path]
 - [ ] TXXX Code cleanup and refactoring
 - [ ] TXXX Performance optimization across all stories
-- [ ] TXXX [P] Additional unit tests (if requested) in tests/unit/
+- [ ] TXXX [P] Additional regression tests in [colocated exact path]
 - [ ] TXXX Security hardening
 - [ ] TXXX Run quickstart.md validation
 
@@ -179,9 +176,8 @@ Examples of foundational tasks (adjust based on your project):
 
 ### Within Each User Story
 
-- Tests (if included) MUST be written and FAIL before implementation
-- Models before services
-- Services before endpoints
+- Tests for changed behavior MUST be included in the same user-story slice
+- Dependencies MUST follow the concrete behavior boundary, not a default layer sequence
 - Core implementation before integration
 - Story complete before moving to next priority
 
@@ -199,13 +195,9 @@ Examples of foundational tasks (adjust based on your project):
 ## Parallel Example: User Story 1
 
 ```bash
-# Launch all tests for User Story 1 together (if tests requested):
-Task: "Contract test for [endpoint] in tests/contract/test_[name].py"
-Task: "Integration test for [user journey] in tests/integration/test_[name].py"
-
-# Launch all models for User Story 1 together:
-Task: "Create [Entity1] model in src/models/[entity1].py"
-Task: "Create [Entity2] model in src/models/[entity2].py"
+# Launch independent work for User Story 1 together:
+Task: "Add behavior test in src/app/(toys)/[slug]/[feature].test.tsx"
+Task: "Add isolated UI component in src/app/(toys)/[slug]/[component].tsx"
 ```
 
 ---
@@ -247,6 +239,7 @@ With multiple developers:
 - [Story] label maps task to specific user story for traceability
 - Each user story should be independently completable and testable
 - Verify tests fail before implementing
-- Commit after each task or logical group
+- Commit after each task or small logical group using Conventional Commits
 - Stop at any checkpoint to validate story independently
-- Avoid: vague tasks, same file conflicts, cross-story dependencies that break independence
+- Avoid: vague tasks, horizontal layer phases, unjustified shared files, same-file conflicts, and
+  cross-story dependencies that break independence

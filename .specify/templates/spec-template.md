@@ -21,6 +21,10 @@
   - Tested independently
   - Deployed independently
   - Demonstrated to users independently
+
+  Each story is a vertical slice of user value. Do not define stories as technical layers such as
+  "build the UI", "add the data model", or "write the tests". Include the complete observable
+  behavior needed to deliver the stated value.
 -->
 
 ### User Story 1 - [Brief Title] (Priority: P1)

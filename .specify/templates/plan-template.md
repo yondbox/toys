@@ -18,17 +18,17 @@
   the iteration process.
 -->
 
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]
+**Language/Version**: TypeScript (strict), Node.js 24+
 
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]
+**Primary Dependencies**: Next.js 16, React 19, Tailwind CSS v4
 
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]
+**Storage**: [browser/server storage used by this feature, or N/A]
 
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]
+**Testing**: Vitest + Testing Library; Playwright for user journeys
 
-**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
+**Target Platform**: Modern web browsers via Next.js App Router
 
-**Project Type**: [e.g., library/cli/web-service/mobile-app/compiler/desktop-app or NEEDS CLARIFICATION]
+**Project Type**: Single Next.js web application
 
 **Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]
 
@@ -40,7 +40,18 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+- **User value and isolation**: The plan identifies an independently testable user outcome and
+  avoids unrelated changes to existing toys.
+- **Colocation**: Toy-specific code and tests stay under `src/app/(toys)/<slug>/`; every proposed
+  move to `src/components/` or `src/lib/` names the concrete shared consumers.
+- **SOLID and readability**: Responsibilities and dependency boundaries are explicit; abstractions
+  solve identified coupling; names and control flow use project vocabulary.
+- **Comments**: The plan identifies non-obvious constraints or contracts that require intent-level
+  comments and rejects comments that only restate code.
+- **Vertical slices**: Delivery is split into independently verifiable user-story increments, not
+  technical layers; shared prerequisites are minimal and name the slices they unblock.
+- **Fixed tooling**: The plan uses pnpm, Biome, strict TypeScript, the fixed Next.js/React/Tailwind
+  stack, and the repository quality-gate commands.
 
 ## Project Structure
 
@@ -65,43 +76,26 @@ specs/[###-feature]/
 -->
 
 ```text
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
 src/
-├── models/
-├── services/
-├── cli/
-└── lib/
+├── app/
+│   ├── (toys)/
+│   │   └── [slug]/
+│   │       ├── page.tsx
+│   │       ├── page.test.tsx
+│   │       └── [colocated feature files]
+│   ├── layout.tsx
+│   └── page.tsx
+├── components/                 # genuinely shared UI only
+├── lib/                        # genuinely shared non-UI code only
+└── toys/
+    └── registry.ts
 
-tests/
-├── contract/
-├── integration/
-└── unit/
-
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
-backend/
-├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
-└── tests/
-
-frontend/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
-└── tests/
-
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
-api/
-└── [same as backend above]
-
-ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
+e2e/
+└── [user-journey].spec.ts
 ```
 
-**Structure Decision**: [Document the selected structure and reference the real
-directories captured above]
+**Structure Decision**: [List concrete files for this feature, explain the colocation boundary,
+and justify each shared file with its consumers]
 
 ## Complexity Tracking
 
