@@ -10,6 +10,13 @@ export type Toy = {
 
 export const toys: Toy[] = [
   {
+    slug: "addition-game",
+    title: "たしざんタイムアタック",
+    description:
+      "きほんは1桁・じょうきゅうは2桁の足し算を、フリーモードとタイムアタックで解くゲーム。",
+    createdAt: "2026-07-07",
+  },
+  {
     slug: "counter",
     title: "カウンター",
     description: "ボタンで数を増減するだけの最小のおもちゃ。",
