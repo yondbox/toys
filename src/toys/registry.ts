@@ -10,11 +10,11 @@ export type Toy = {
 
 export const toys: Toy[] = [
   {
-    slug: "addition-game",
-    title: "たしざんタイムアタック",
+    slug: "keisan-game",
+    title: "けいさんゲーム",
     description:
-      "きほんは1桁・じょうきゅうは2桁の足し算を、フリーモードとタイムアタックで解くゲーム。",
-    createdAt: "2026-07-07",
+      "たしざん・ひきざん・かけざん・わりざんを、レベル別のれんしゅうとタイムアタックであそべる計算ゲーム。",
+    createdAt: "2026-07-08",
   },
   {
     slug: "counter",
