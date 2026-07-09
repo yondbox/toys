@@ -1,7 +1,3 @@
-// ゲーム規則(状態機械)。React・DOM・タイマーに依存しない。
-// 乱数と現在時刻はアクションで注入し、reducer を純関数に保つ
-// (React 19 の要件・テストの決定性のための境界)。
-
 import {
   type Level,
   maxAnswerDigits,
@@ -10,16 +6,46 @@ import {
   REMAINDER_MAX_DIGITS,
 } from "./operations";
 
+/**
+ * タイムアタックで選べる目標問題数。
+ *
+ * UI のボタン、型、記録キーを同じ配列から派生させ、選択肢の不一致を防ぐ。
+ */
 export const TIME_ATTACK_TARGETS = [10, 30, 50] as const;
+
+/**
+ * タイムアタックの目標問題数。
+ *
+ * `TIME_ATTACK_TARGETS` から派生させ、追加時に型定義を別途編集しなくてよいようにする。
+ */
 export type TimeAttackTarget = (typeof TIME_ATTACK_TARGETS)[number];
 
-// FR-011: 正誤表示は子どもが読み取れる長さで自動的に閉じる。
+/**
+ * 正誤フィードバックを表示する時間。
+ *
+ * 子どもが結果を読み取れる長さを確保しつつ、次の問題へ自動で進めるための値。
+ */
 export const FEEDBACK_MS = 800;
-// FR-018: カウントダウンは 3・2・1 を各1秒。
+
+/**
+ * カウントダウンの1ステップの長さ。
+ *
+ * 3・2・1 を各1秒で見せ、開始タイミングを予測しやすくする。
+ */
 export const COUNTDOWN_STEP_MS = 1000;
-// FR-019: 経過時間は 0.1 秒単位で表示する(計測はタイムスタンプ差分で行う)。
+
+/**
+ * 経過時間表示を更新する間隔。
+ *
+ * 計測自体はタイムスタンプ差分で行い、この値は見た目の更新頻度だけを決める。
+ */
 export const TIMER_DISPLAY_INTERVAL_MS = 100;
 
+/**
+ * 現在のプレイモード。
+ *
+ * れんしゅうは終了操作まで続き、タイムアタックだけ目標問題数を持つため union で分ける。
+ */
 export type GameMode =
   | { kind: "practice" }
   | { kind: "timeAttack"; target: TimeAttackTarget };
@@ -37,6 +63,11 @@ export type AnswerInput =
       focus: "quotient" | "remainder";
     };
 
+/**
+ * 問題の答え形式に合う空入力を作る。
+ *
+ * 問題切り替え・不正解後の再挑戦・クリア操作で同じ初期化を使い、2欄入力の分岐漏れを防ぐ。
+ */
 export function emptyInputFor(problem: Problem): AnswerInput {
   return problem.answer.kind === "single"
     ? { kind: "single", value: "" }
@@ -48,6 +79,11 @@ export function emptyInputFor(problem: Problem): AnswerInput {
       };
 }
 
+/**
+ * プレイ中とフィードバック中で共有するセッション情報。
+ *
+ * 画面だけが変わっても問題・入力・計測情報は引き継ぐため、共通部分を型でまとめる。
+ */
 type SessionBase = {
   operation: Operation;
   level: Level;
@@ -64,6 +100,12 @@ type SessionBase = {
   pausedMs: number;
 };
 
+/**
+ * 計算ゲームの画面状態。
+ *
+ * React コンポーネントが画面ごとの必要データだけ参照できるよう、screen を判別子にした
+ * union として表す。
+ */
 export type GameState =
   | { screen: "mode-select" }
   | {
@@ -96,6 +138,12 @@ export type GameState =
       elapsedMs: number;
     };
 
+/**
+ * reducer が受け取るゲーム内イベント。
+ *
+ * 乱数で作った次問題と現在時刻は action 側から注入し、reducer を React・DOM・タイマーに
+ * 依存しない純関数として保つ。
+ */
 export type GameAction =
   | {
       type: "START_PRACTICE";
@@ -120,14 +168,29 @@ export type GameAction =
   | { type: "RETRY" }
   | { type: "BACK_TO_MODE_SELECT" };
 
+/**
+ * ゲームの初期状態。
+ *
+ * どの画面からホームへ戻ってもこの値へ戻すことで、選択中の演算や入力を残さない。
+ */
 export const initialState: GameState = { screen: "mode-select" };
 
+/**
+ * 確定できるだけの入力がそろっているかを判定する。
+ *
+ * あまりのあるわり算では片方だけの入力で採点しないため、採点前のガードをここに集約する。
+ */
 function isInputComplete(input: AnswerInput): boolean {
   return input.kind === "single"
     ? input.value !== ""
     : input.quotient !== "" && input.remainder !== "";
 }
 
+/**
+ * 現在の入力が問題の答えと一致するかを判定する。
+ *
+ * 入力は文字列、答えは数値で保持しているため、UI の入力形式を reducer 内だけで数値化する。
+ */
 function isInputCorrect(problem: Problem, input: AnswerInput): boolean {
   if (problem.answer.kind === "single") {
     return (
@@ -141,6 +204,12 @@ function isInputCorrect(problem: Problem, input: AnswerInput): boolean {
   );
 }
 
+/**
+ * ゲーム状態を進める純粋な reducer。
+ *
+ * UI イベント、タイマー、問題生成を action に変換してから渡す設計にしている。これにより
+ * れんしゅう・タイムアタック・フィードバックの遷移をユニットテストで決定的に検証できる。
+ */
 export function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case "BACK_TO_MODE_SELECT":

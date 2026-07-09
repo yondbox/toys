@@ -5,6 +5,11 @@ import {
   recordTimeAttackResult,
 } from "./records";
 
+/**
+ * 自己ベストの保存状態をテスト間で分離する。
+ *
+ * localStorage は同じ jsdom 環境に残るため、条件別記録の混在テスト結果が次ケースへ漏れないようにする。
+ */
 afterEach(() => {
   localStorage.clear();
 });

@@ -10,8 +10,13 @@ import {
   REMAINDER_MAX_DIGITS,
 } from "./operations";
 
-/** テストを決定的にするための線形合同法 rng。 */
+/**
+ * テストを決定的にするための線形合同法 RNG。
+ *
+ * `generateProblem` の rng 注入を検証しつつ、出題範囲テストが乱数の偶然で落ちないようにする。
+ */
 function seededRng(seed: number): () => number {
+  /** 32bit に丸めた内部状態。seed の符号差で結果がぶれないよう unsigned にする。 */
   let state = seed >>> 0;
   return () => {
     state = (state * 1664525 + 1013904223) >>> 0;
@@ -19,14 +24,20 @@ function seededRng(seed: number): () => number {
   };
 }
 
-/** 各性質を十分な回数の抽選で確認する。 */
+/**
+ * 指定した演算と難易度の問題をまとめて生成する。
+ *
+ * 境界値を1問だけで断定せず、複数サンプルで出題範囲の性質を検証するために使う。
+ */
 function sample(
   op: ConcreteOperation | "mix",
   level: Level,
   count = 300,
   seed = 42,
 ): Problem[] {
+  /** 同じテスト入力から常に同じ問題列を作るための RNG。 */
   const rng = seededRng(seed);
+  /** 検証対象として集めた問題列。 */
   const problems: Problem[] = [];
   for (let i = 0; i < count; i++) {
     problems.push(generateProblem(op, level, null, rng));
@@ -34,6 +45,11 @@ function sample(
   return problems;
 }
 
+/**
+ * 単一値の答えを取り出す。
+ *
+ * あまりのあるわり算を誤って通常問題として検証した場合に、失敗理由が分かる例外を出す。
+ */
 function singleValue(problem: Problem): number {
   if (problem.answer.kind !== "single") {
     throw new Error(`単一の答えを期待: ${JSON.stringify(problem)}`);

@@ -1,10 +1,21 @@
 import { expect, type Page, test } from "@playwright/test";
 
+/**
+ * `html[data-theme]` が期待するテーマになっていることを確認する。
+ *
+ * CSS の見た目ではなく、アプリがテーマ切替の正本として使う DOM 属性を検証する。
+ */
 async function expectTheme(page: Page, theme: "light" | "dark") {
   await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
 }
 
+/**
+ * ページに横スクロールが発生していないことを確認する。
+ *
+ * 375px 幅のモバイル表示で UI がはみ出す退行を、ページ内容に依存せず共通に検出する。
+ */
 async function expectNoHorizontalScroll(page: Page) {
+  /** document 幅と viewport 幅の比較に必要なレイアウト値。 */
   const metrics = await page.evaluate(() => ({
     scrollWidth: document.documentElement.scrollWidth,
     clientWidth: document.documentElement.clientWidth,

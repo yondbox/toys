@@ -9,6 +9,7 @@ import {
   gameReducer,
   initialState,
   TIME_ATTACK_TARGETS,
+  TIMER_DISPLAY_INTERVAL_MS,
 } from "./game";
 import { Keypad } from "./Keypad";
 import {
@@ -22,6 +23,11 @@ import {
 } from "./operations";
 import { recordTimeAttackResult, type TimeAttackOutcome } from "./records";
 
+/**
+ * 演算選択ボタンの色。
+ *
+ * 子どもが演算を視覚的に区別しやすいよう、記号ごとに別系統の色を割り当てる。
+ */
 const operationTone: Record<Operation, string> = {
   add: "border-red-300 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-200",
   sub: "border-sky-300 bg-sky-50 text-sky-700 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-200",
@@ -30,6 +36,11 @@ const operationTone: Record<Operation, string> = {
   mix: "border-fuchsia-300 bg-fuchsia-50 text-fuchsia-800 dark:border-fuchsia-800 dark:bg-fuchsia-950/40 dark:text-fuchsia-200",
 };
 
+/**
+ * 現在の問題を画面表示用の式文字列へ変換する。
+ *
+ * 表示記号は `OPERATION_META` に集約し、UI とテストの記号解釈がずれないようにする。
+ */
 function equation(
   state: Extract<GameState, { screen: "playing" | "feedback" }>,
 ) {
@@ -37,12 +48,23 @@ function equation(
   return `${a} ${OPERATION_META[op].symbol} ${b} =`;
 }
 
+/**
+ * 単一入力欄に表示する値を返す。
+ *
+ * 商・あまりの2欄入力では専用 UI を描画するため、単一欄側には空文字を返して誤表示を防ぐ。
+ */
 function answerValue(
   state: Extract<GameState, { screen: "playing" | "feedback" }>,
 ) {
   return state.input.kind === "single" ? state.input.value : "";
 }
 
+/**
+ * タイムアタックで計測対象になる経過時間を返す。
+ *
+ * 正誤フィードバック中は時間を止める仕様なので、feedback 画面では開始時刻ではなく
+ * フィードバック開始時刻を終点にする。
+ */
 function activeElapsedMs(
   state: Extract<GameState, { screen: "playing" | "feedback" }>,
   currentNow: number,
@@ -55,19 +77,41 @@ function activeElapsedMs(
   return Math.max(0, endAt - state.startedAt - state.pausedMs);
 }
 
+/**
+ * 選択ボタンの `aria-pressed` に渡す文字列を作る。
+ *
+ * boolean ではなく明示的な文字列にして、テストと DOM 属性の比較を単純にする。
+ */
 function isActiveSelection(current: string, value: string) {
   return current === value ? "true" : "false";
 }
 
+/**
+ * けいさんゲームの1ページアプリ。
+ *
+ * 出題・採点・記録更新の規則は純粋な reducer とユーティリティへ置き、このコンポーネントは
+ * ユーザー操作、タイマー、localStorage への橋渡しだけを担当する。
+ */
 export default function KeisanGamePage() {
+  /** 画面全体の状態。遷移規則は `gameReducer` に閉じ込める。 */
   const [state, dispatch] = useReducer(gameReducer, initialState);
+  /** モード選択画面で現在選ばれている演算。開始時に state へ取り込む。 */
   const [operation, setOperation] = useState<Operation>("add");
+  /** モード選択画面で現在選ばれている難易度。開始時に state へ取り込む。 */
   const [level, setLevel] = useState<Level>("easy");
+  /** タイムアタック HUD の表示更新用時刻。計測の正本は reducer 内のタイムスタンプ差分。 */
   const [now, setNow] = useState(() => Date.now());
+  /** 結果画面で表示する自己ベスト更新結果。記録処理が終わるまでは null にする。 */
   const [timeAttackOutcome, setTimeAttackOutcome] =
     useState<TimeAttackOutcome | null>(null);
+  /** React の再描画で同じ result を二重保存しないための署名。 */
   const recordedResultRef = useRef<string | null>(null);
 
+  /**
+   * 正誤表示を一定時間で閉じるタイマー。
+   *
+   * reducer に次問題を注入することで、問題生成を UI 副作用側に閉じ込める。
+   */
   useEffect(() => {
     if (state.screen !== "feedback") {
       return;
@@ -85,6 +129,11 @@ export default function KeisanGamePage() {
     return () => window.clearTimeout(timer);
   }, [state]);
 
+  /**
+   * タイムアタック開始前の 3・2・1 カウントダウン。
+   *
+   * 最後の tick で開始時刻と最初の問題を同時に reducer へ渡し、計測開始の境界を明確にする。
+   */
   useEffect(() => {
     if (state.screen !== "countdown") {
       return;
@@ -99,21 +148,35 @@ export default function KeisanGamePage() {
     return () => window.clearTimeout(timer);
   }, [state]);
 
+  /**
+   * タイムアタック中の HUD 表示更新。
+   *
+   * 経過時間は reducer の時刻から計算し、この interval は 0.1 秒単位の再描画だけを担う。
+   */
   useEffect(() => {
     if (state.screen !== "playing" || state.mode.kind !== "timeAttack") {
       return;
     }
     setNow(Date.now());
-    const timer = window.setInterval(() => setNow(Date.now()), 100);
+    const timer = window.setInterval(
+      () => setNow(Date.now()),
+      TIMER_DISPLAY_INTERVAL_MS,
+    );
     return () => window.clearInterval(timer);
   }, [state]);
 
+  /**
+   * タイムアタック結果を自己ベストへ反映する。
+   *
+   * result 画面へ入った瞬間だけ保存し、別画面へ戻ったら表示用結果と二重保存防止署名を消す。
+   */
   useEffect(() => {
     if (state.screen !== "result") {
       recordedResultRef.current = null;
       setTimeAttackOutcome(null);
       return;
     }
+    /** 同じ結果画面の再描画で記録更新を二重実行しないための識別子。 */
     const signature = `${state.operation}:${state.level}:${state.target}:${state.elapsedMs}`;
     if (recordedResultRef.current === signature) {
       return;
@@ -129,7 +192,17 @@ export default function KeisanGamePage() {
     );
   }, [state]);
 
+  /**
+   * 物理キーボード入力を画面テンキーと同じ action へ写像する。
+   *
+   * 修飾キー付きショートカットはブラウザや OS の操作を妨げないよう無視する。
+   */
   useEffect(() => {
+    /**
+     * 数字・削除・クリア・確定キーだけをゲーム入力として処理する。
+     *
+     * 画面テンキーと同じ dispatch に寄せることで、入力手段による挙動差を作らない。
+     */
     function handleKeyDown(event: KeyboardEvent) {
       if (event.metaKey || event.ctrlKey || event.altKey) {
         return;
@@ -158,6 +231,11 @@ export default function KeisanGamePage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  /**
+   * 現在選択中の演算・難易度でれんしゅうを開始する。
+   *
+   * 最初の問題は開始操作のタイミングで生成し、reducer は生成済み問題を受け取るだけにする。
+   */
   function startPractice() {
     dispatch({
       type: "START_PRACTICE",
@@ -167,6 +245,11 @@ export default function KeisanGamePage() {
     });
   }
 
+  /**
+   * 現在選択中の演算・難易度でタイムアタックのカウントダウンを開始する。
+   *
+   * 実際の開始時刻はカウントダウン終了 action で入れるため、ここでは条件だけを固定する。
+   */
   function startTimeAttack(target: (typeof TIME_ATTACK_TARGETS)[number]) {
     dispatch({ type: "START_TIME_ATTACK", operation, level, target });
   }

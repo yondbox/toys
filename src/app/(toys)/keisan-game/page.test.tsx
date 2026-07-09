@@ -3,8 +3,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FEEDBACK_MS } from "./game";
 import KeisanGamePage from "./page";
 
-// タイマー(正誤表示・カウントダウン・経過時間)と Date.now() を両方進めるため
-// Date も含めてフェイクにする。
+/**
+ * テスト中に使うフェイクタイマー設定。
+ *
+ * 正誤表示・カウントダウン・経過時間表示のすべてが Date.now() と timer に依存するため、
+ * Date も含めて fake にする。
+ */
 beforeEach(() => {
   vi.useFakeTimers({
     toFake: [
@@ -17,11 +21,21 @@ beforeEach(() => {
   });
 });
 
+/**
+ * テストごとの副作用を片付ける。
+ *
+ * localStorage の自己ベストとテーマ設定が次のテストへ漏れると初期画面の期待が変わるため毎回消す。
+ */
 afterEach(() => {
   vi.useRealTimers();
   localStorage.clear();
 });
 
+/**
+ * 画面上の演算記号から正答を計算するための表。
+ *
+ * UI と同じ記号を使い、テスト側が内部の `Problem` を覗かずにユーザー視点で回答できるようにする。
+ */
 const SYMBOL_CALC: Record<string, (a: number, b: number) => number> = {
   "＋": (a, b) => a + b,
   "−": (a, b) => a - b,
@@ -29,11 +43,22 @@ const SYMBOL_CALC: Record<string, (a: number, b: number) => number> = {
   "÷": (a, b) => Math.floor(a / b),
 };
 
+/**
+ * 現在表示されている式のテキストを返す。
+ *
+ * DOM 上の表示を検証の正本にし、内部状態へ依存しないテストにする。
+ */
 function equationText(): string {
   return screen.getByTestId("equation").textContent ?? "";
 }
 
+/**
+ * 表示中の式を数値と記号へ分解する。
+ *
+ * ユーザーが見ている式から回答を組み立てることで、出題生成のランダム性をテストから切り離す。
+ */
 function readEquation(): { a: number; b: number; symbol: string } {
+  /** `7 ＋ 3 =` のような表示から左辺2数と記号を抜き出した結果。 */
   const match = equationText().match(/(\d+)\s*([＋−×÷])\s*(\d+)\s*=/);
   if (!match) {
     throw new Error(`式を読み取れない: ${equationText()}`);
@@ -41,26 +66,51 @@ function readEquation(): { a: number; b: number; symbol: string } {
   return { a: Number(match[1]), symbol: match[2], b: Number(match[3]) };
 }
 
+/**
+ * 画面テンキーの指定キーを押す。
+ *
+ * テストを touch UI の data-testid に寄せ、キーボード入力とは別にテンキー経路を検証する。
+ */
 function tapKey(name: string) {
   fireEvent.click(screen.getByTestId(`key-${name}`));
 }
 
+/**
+ * 複数桁の数字をテンキーで順番に入力する。
+ *
+ * ユーザーの連打に近い形で入力し、桁数制限や欄移動の挙動も通す。
+ */
 function tapDigits(digits: string) {
   for (const digit of digits) {
     tapKey(digit);
   }
 }
 
+/**
+ * 単一答え欄の表示テキストを返す。
+ *
+ * 通常問題のテストだけが使い、あまりのあるわり算は専用 helper で2欄を読む。
+ */
 function answerText(): string {
   return screen.getByTestId("answer").textContent ?? "";
 }
 
+/**
+ * 正誤フィードバックが閉じるまで fake timer を進める。
+ *
+ * 実時間待ちを避けつつ、`FEEDBACK_MS` と UI の自動遷移が同期していることを保つ。
+ */
 function advanceFeedback() {
   act(() => {
     vi.advanceTimersByTime(FEEDBACK_MS);
   });
 }
 
+/**
+ * 指定条件でれんしゅうモードを開始する。
+ *
+ * ホーム画面の選択操作を通すことで、モード開始ボタンと state 初期化の両方を検証対象に含める。
+ */
 function startPractice(op = "add", level = "easy") {
   render(<KeisanGamePage />);
   fireEvent.click(screen.getByTestId(`op-${op}`));
@@ -68,6 +118,11 @@ function startPractice(op = "add", level = "easy") {
   fireEvent.click(screen.getByTestId("mode-practice"));
 }
 
+/**
+ * 指定条件でタイムアタックを開始し、カウントダウンを完了させる。
+ *
+ * 3秒分の timer を進めてから検証を始め、プレイ画面の挙動だけに集中できる状態を作る。
+ */
 function startTimeAttack(op = "add", level = "easy", target = 10) {
   render(<KeisanGamePage />);
   fireEvent.click(screen.getByTestId(`op-${op}`));
@@ -80,7 +135,11 @@ function startTimeAttack(op = "add", level = "easy", target = 10) {
   }
 }
 
-/** 現在の問題(単一の答え)に正答し、正解表示を終える。 */
+/**
+ * 現在の問題(単一の答え)に正答し、正解表示を終える。
+ *
+ * れんしゅうとタイムアタックの成功経路で同じ DOM 操作を使い、内部 action を直接呼ばない。
+ */
 function solveOnce() {
   const { a, b, symbol } = readEquation();
   tapDigits(String(SYMBOL_CALC[symbol](a, b)));
@@ -189,14 +248,29 @@ describe("れんしゅうモード (US1)", () => {
 });
 
 describe("あまりのあるわり算 (US1・FR-006)", () => {
+  /**
+   * あまりのあるわり算が出る条件でれんしゅうを開始する。
+   *
+   * div hard 以外では2欄入力にならないため、テスト条件を helper 名で固定する。
+   */
   function startHardDivision() {
     startPractice("div", "hard");
   }
 
+  /**
+   * 商入力欄の表示値を返す。
+   *
+   * あまりのあるわり算では単一答え欄が存在しないため、専用の test id を読む。
+   */
   function quotientText(): string {
     return screen.getByTestId("answer-quotient").textContent ?? "";
   }
 
+  /**
+   * あまり入力欄の表示値を返す。
+   *
+   * 商欄とは別にフォーカス・入力が切り替わることを検証するため、個別 helper にする。
+   */
   function remainderText(): string {
     return screen.getByTestId("answer-remainder").textContent ?? "";
   }
@@ -246,6 +320,11 @@ describe("れんしゅうの成果 (US1・FR-016)", () => {
 });
 
 describe("タイムアタック (US2)", () => {
+  /**
+   * タイムアタック中の現在問題を解いて、正誤表示を閉じる。
+   *
+   * 各問で 100ms 進めることで、10問完了時の期待タイムを 1.0 秒に固定する。
+   */
   function solveTimeAttackProblem() {
     const { a, b, symbol } = readEquation();
     act(() => {

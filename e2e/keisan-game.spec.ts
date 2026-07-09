@@ -1,8 +1,17 @@
 import { expect, type Page, test } from "@playwright/test";
 
-// たて向きスマートフォンを主対象に検証する (FR-036, SC-010)。
+/**
+ * けいさんゲームの主対象である縦向きスマートフォン viewport。
+ *
+ * レイアウト要件は 375×667 でスクロールなしに収まることなので、ファイル全体の既定にする。
+ */
 test.use({ viewport: { width: 375, height: 667 } });
 
+/**
+ * 画面上の演算記号から正答を計算するための表。
+ *
+ * Playwright では内部状態に触らず、ユーザーが見ている式だけから回答する方針にする。
+ */
 const SYMBOL_CALC: Record<string, (a: number, b: number) => number> = {
   "＋": (a, b) => a + b,
   "−": (a, b) => a - b,
@@ -10,10 +19,17 @@ const SYMBOL_CALC: Record<string, (a: number, b: number) => number> = {
   "÷": (a, b) => Math.floor(a / b),
 };
 
+/**
+ * 表示中の式を数値と演算記号へ分解する。
+ *
+ * ランダムに生成された問題でも、テストが DOM の表示を読んで正答できるようにする。
+ */
 async function readEquation(
   page: Page,
 ): Promise<{ a: number; b: number; symbol: string }> {
+  /** 現在画面に表示されている式テキスト。 */
   const text = await page.getByTestId("equation").textContent();
+  /** `7 ＋ 3 =` 形式から左辺2数と演算記号を抜き出した結果。 */
   const match = text?.match(/(\d+)\s*([＋−×÷])\s*(\d+)\s*=/);
   if (!match) {
     throw new Error(`式を読み取れない: ${text}`);
@@ -21,15 +37,25 @@ async function readEquation(
   return { a: Number(match[1]), symbol: match[2], b: Number(match[3]) };
 }
 
+/**
+ * 画面テンキーで複数桁を入力する。
+ *
+ * モバイル受け入れ条件では物理キーボードを使わないため、すべての回答を key button 経由にする。
+ */
 async function tapDigits(page: Page, digits: string) {
   for (const digit of digits) {
     await page.getByTestId(`key-${digit}`).click();
   }
 }
 
-/** 画面テンキーだけ(キーボード不使用)で現在の問題に正答する。 */
+/**
+ * 画面テンキーだけ(キーボード不使用)で現在の問題に正答する。
+ *
+ * あまりのあるわり算だけ2欄入力へ分岐し、通常問題と同じ成功経路でフィードバック終了まで待つ。
+ */
 async function solveByTouch(page: Page) {
   const { a, b, symbol } = await readEquation(page);
+  /** 現在の問題が商・あまりの2欄入力かどうか。 */
   const hasRemainder = (await page.getByTestId("answer-remainder").count()) > 0;
   if (hasRemainder) {
     await tapDigits(page, String(Math.floor(a / b)));
@@ -43,6 +69,11 @@ async function solveByTouch(page: Page) {
   await expect(page.getByTestId("feedback")).toBeHidden({ timeout: 3000 });
 }
 
+/**
+ * 指定条件でれんしゅうモードを開始する。
+ *
+ * URL 直打ちではなくホームの選択操作を通し、モード選択 UI も受け入れ条件に含める。
+ */
 async function startPractice(page: Page, op: string, level: string) {
   await page.goto("/keisan-game");
   await page.getByTestId(`op-${op}`).click();
@@ -50,6 +81,11 @@ async function startPractice(page: Page, op: string, level: string) {
   await page.getByTestId("mode-practice").click();
 }
 
+/**
+ * 指定条件でタイムアタックを開始し、最初の問題が表示されるまで待つ。
+ *
+ * カウントダウンは実時間に任せ、ユーザーが実際に見る開始フローを E2E で通す。
+ */
 async function startTimeAttack(
   page: Page,
   op: string,

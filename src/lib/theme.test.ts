@@ -8,6 +8,11 @@ import {
   writeTheme,
 } from "./theme";
 
+/**
+ * matchMedia の color scheme 結果を差し替える。
+ *
+ * OS テーマに依存する分岐を決定的にテストし、実行環境の設定で期待値が変わらないようにする。
+ */
 function mockColorScheme(matches: boolean) {
   Object.defineProperty(window, "matchMedia", {
     writable: true,
@@ -24,11 +29,21 @@ function mockColorScheme(matches: boolean) {
   });
 }
 
+/**
+ * 各テストの既定 OS テーマを light にそろえる。
+ *
+ * 保存値優先と system fallback のテストが、前ケースや実マシン設定に影響されないようにする。
+ */
 beforeEach(() => {
   mockColorScheme(false);
   document.documentElement.removeAttribute("data-theme");
 });
 
+/**
+ * テーマ保存値・DOM 属性・mock をテスト間で初期化する。
+ *
+ * `data-theme` は documentElement に残るため、明示的に消して初期反映テストを独立させる。
+ */
 afterEach(() => {
   localStorage.clear();
   vi.restoreAllMocks();

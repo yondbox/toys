@@ -2,6 +2,11 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ThemeToggle } from "./ThemeToggle";
 
+/**
+ * ThemeToggle が参照する matchMedia をテスト用に差し替える。
+ *
+ * OS テーマの差を固定し、保存値がない初期表示の期待値を実行環境から切り離す。
+ */
 function mockColorScheme(matches: boolean) {
   Object.defineProperty(window, "matchMedia", {
     writable: true,
@@ -18,11 +23,21 @@ function mockColorScheme(matches: boolean) {
   });
 }
 
+/**
+ * 各テストの初期テーマ環境を light 相当に戻す。
+ *
+ * 前ケースの `data-theme` が残ると初期反映の検証が読みにくくなるため、DOM 属性も消す。
+ */
 beforeEach(() => {
   mockColorScheme(false);
   document.documentElement.removeAttribute("data-theme");
 });
 
+/**
+ * ThemeToggle の保存値・DOM 属性・matchMedia mock を後片付けする。
+ *
+ * コンポーネントは localStorage と documentElement に副作用を持つため、テスト間で明示的に分離する。
+ */
 afterEach(() => {
   localStorage.clear();
   vi.restoreAllMocks();

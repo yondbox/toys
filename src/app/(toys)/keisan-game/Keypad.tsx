@@ -1,22 +1,49 @@
 "use client";
 
-// 画面テンキー。タッチ端末だけで答えを入力・修正・確定できるようにする (FR-007)。
-// 各キーは 48px 四方以上を確保する (FR-008)。キーボード入力との対応は
-// page.tsx の keydown リスナーが同じアクションへ写像する (FR-009)。
-
+/**
+ * 画面テンキーから親へ通知する入力操作。
+ *
+ * キーボード入力は `page.tsx` が同じ reducer action へ写像するため、このコンポーネントは
+ * タッチ操作だけに責務を絞る。
+ */
 type KeypadProps = {
+  /** 数字キーを押したときに、押された1桁を通知する。 */
   onDigit: (digit: string) => void;
+  /** 1文字削除キーを押したときに通知する。 */
   onBackspace: () => void;
+  /** 入力全消去キーを押したときに通知する。 */
   onClear: () => void;
+  /** OK キーで現在の入力を確定するときに通知する。 */
   onSubmit: () => void;
 };
 
-// 押した感を出すボタン: 下辺の濃い縁を押下時に薄くして沈ませる。
+/**
+ * テンキー全体で共有するボタンの土台スタイル。
+ *
+ * 48px 以上のタッチターゲットと押下時の沈み込みをまとめ、数字キーと編集キーのサイズ差を防ぐ。
+ */
 const keyBase =
   "flex min-h-12 items-center justify-center rounded-2xl border border-b-4 font-bold select-none touch-manipulation active:translate-y-0.5 active:border-b sm:min-h-14";
+
+/**
+ * 数字キー用の強調スタイル。
+ *
+ * 入力の主操作なので背景を白系にして、編集キーより視認性を高くする。
+ */
 const digitKey = `${keyBase} border-zinc-200 border-b-zinc-300 bg-white text-2xl text-zinc-800 dark:border-zinc-700 dark:border-b-zinc-600 dark:bg-zinc-800 dark:text-zinc-100`;
+
+/**
+ * 削除・全消去キー用の控えめなスタイル。
+ *
+ * 数字入力との押し間違いを減らすため、同じサイズを保ちながら色だけ弱める。
+ */
 const editKey = `${keyBase} border-zinc-200 border-b-zinc-300 bg-zinc-100 text-zinc-600 dark:border-zinc-700 dark:border-b-zinc-600 dark:bg-zinc-800 dark:text-zinc-300`;
 
+/**
+ * 1つの数字キーを描画する小さな部品。
+ *
+ * 10個の数字キーで data-testid とクリック動作を揃え、テストとアクセシビリティ上の差異を避ける。
+ */
 function DigitKey({
   digit,
   onDigit,
@@ -36,14 +63,23 @@ function DigitKey({
   );
 }
 
+/**
+ * 計算ゲーム用の画面テンキー。
+ *
+ * タッチ端末だけで答えを入力・修正・確定できるよう、数字・削除・全消去・OK を1画面に収める。
+ */
 export function Keypad({
   onDigit,
   onBackspace,
   onClear,
   onSubmit,
 }: KeypadProps) {
-  // グリッドの自動配置で電卓レイアウトを作る:
-  // 7 8 9 ⌫ / 4 5 6 ぜんぶけす / 1 2 3 OK(縦2) / 0(横3)
+  /**
+   * グリッドの自動配置で作る電卓レイアウト。
+   *
+   * 7 8 9 ⌫ / 4 5 6 ぜんぶけす / 1 2 3 OK(縦2) / 0(横3) の順に置き、
+   * 小さな画面でも主要キーが指で押しやすい配置にする。
+   */
   return (
     <div
       data-testid="keypad"

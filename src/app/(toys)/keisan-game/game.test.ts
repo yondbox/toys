@@ -7,11 +7,20 @@ import {
 } from "./game";
 import type { Level, Operation, Problem } from "./operations";
 
+/**
+ * たし算の通常問題 fixture を作る。
+ *
+ * reducer の遷移テストでは出題生成のランダム性を排除し、入力と正誤判定だけを検証する。
+ */
 function singleProblem(a: number, b: number): Problem {
   return { op: "add", a, b, answer: { kind: "single", value: a + b } };
 }
 
-/** 93 ÷ 7 = 13 あまり 2 のような、あまりのあるわり算。 */
+/**
+ * 93 ÷ 7 = 13 あまり 2 の fixture を返す。
+ *
+ * 2欄入力の reducer 分岐を通常の単一答え問題から独立して検証するために固定値を使う。
+ */
 function remainderProblem(): Problem {
   return {
     op: "div",
@@ -21,10 +30,20 @@ function remainderProblem(): Problem {
   };
 }
 
+/**
+ * 複数 action を順番に reducer へ流す。
+ *
+ * reducer の状態遷移テストで、ユーザー操作の連続を読みやすく表現するための薄い helper。
+ */
 function reduce(state: GameState, ...actions: GameAction[]): GameState {
   return actions.reduce(gameReducer, state);
 }
 
+/**
+ * 初期状態かられんしゅうを開始した状態を作る。
+ *
+ * 各テストが mode-select の boilerplate を持たず、検証対象の action から読み始められるようにする。
+ */
 function startPractice(
   problem: Problem = singleProblem(7, 3),
   operation: Operation = "add",
@@ -38,11 +57,20 @@ function startPractice(
   });
 }
 
-/** あまりのあるわり算(div×hard)のれんしゅうを開始する。 */
+/**
+ * あまりのあるわり算(div×hard)のれんしゅうを開始する。
+ *
+ * `operation` と `level` が入力桁数に影響するため、2欄入力テストでは必ずこの条件を使う。
+ */
 function startRemainderPractice(): GameState {
   return startPractice(remainderProblem(), "div", "hard");
 }
 
+/**
+ * playing 状態の入力だけを取り出す。
+ *
+ * 期待しない画面へ遷移した場合に、単なる undefined 比較ではなく現在画面を含む失敗にする。
+ */
 function playingInput(state: GameState) {
   if (state.screen !== "playing") {
     throw new Error(`playing を期待: ${state.screen}`);
@@ -303,6 +331,11 @@ describe("れんしゅうの終了 (FR-016)", () => {
 });
 
 describe("タイムアタック (FR-018/019/020/024)", () => {
+  /**
+   * 初期状態から10問タイムアタックのカウントダウン画面を作る。
+   *
+   * カウントダウン遷移とプレイ開始後の計測を別々に検証できるようにする。
+   */
   function startCountdown(): GameState {
     return gameReducer(initialState, {
       type: "START_TIME_ATTACK",
@@ -312,6 +345,11 @@ describe("タイムアタック (FR-018/019/020/024)", () => {
     });
   }
 
+  /**
+   * カウントダウンを完了し、タイムアタックの playing 状態を作る。
+   *
+   * 開始時刻を 3000ms に固定し、elapsedMs の期待値を読みやすくする。
+   */
   function startTimeAttack(problem: Problem = singleProblem(7, 3)): GameState {
     return reduce(
       startCountdown(),

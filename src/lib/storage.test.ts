@@ -1,8 +1,18 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { readJSON, readString, writeJSON, writeString } from "./storage";
 
+/**
+ * JSON 保存テストで使う自己ベスト風の型。
+ *
+ * storage 層が keisan-game 固有型を import しないことを保つため、テスト内だけの最小型にしている。
+ */
 type Best = { elapsedMs: number };
 
+/**
+ * `Best` として読める値かを判定するテスト用型ガード。
+ *
+ * `readJSON` が呼び出し側の型ガードへ検証を委譲することを確認する。
+ */
 function isBest(value: unknown): value is Best {
   return (
     typeof value === "object" &&
@@ -11,6 +21,11 @@ function isBest(value: unknown): value is Best {
   );
 }
 
+/**
+ * localStorage と mock をテスト間で初期化する。
+ *
+ * storage 例外の spy と保存値が残ると、後続ケースのフォールバック検証が汚れるため毎回戻す。
+ */
 afterEach(() => {
   localStorage.clear();
   vi.restoreAllMocks();

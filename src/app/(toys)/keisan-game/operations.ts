@@ -1,21 +1,56 @@
-// 演算×レベルの出題規則。React・DOM に依存しない純関数群。
-// 乱数は rng 引数で注入し、テストを決定的にできるようにする。
-// 低学年への配慮 (FR-004): ひき算は答えが0以上、わり算は割り切れる問題のみ
-// (あまりレベルを除く)、0で割る問題は生成しない。各生成器がこれを保証する。
-
+/**
+ * 実際に式として出題する4演算。
+ *
+ * `"mix"` はユーザーが選ぶモードであり、問題生成時にはこのいずれかへ解決する。
+ */
 export type ConcreteOperation = "add" | "sub" | "mul" | "div";
+
+/**
+ * ユーザーがホーム画面で選べる演算。
+ *
+ * ミックスを UI と状態に残すことで、同じ reducer/action で通常演算と混合演算を扱う。
+ */
 export type Operation = ConcreteOperation | "mix";
+
+/**
+ * 出題範囲を決める難易度。
+ *
+ * 仕様上は低学年向けの段階的な範囲で、各生成器がこの値を見て問題の数値域を選ぶ。
+ */
 export type Level = "easy" | "normal" | "hard";
 
+/**
+ * ミックスモードが抽選対象にする実演算の一覧。
+ *
+ * UI 表示用の `OPERATIONS` と分け、生成器が `"mix"` を再帰的に引かないようにする。
+ */
 export const CONCRETE_OPERATIONS: readonly ConcreteOperation[] = [
   "add",
   "sub",
   "mul",
   "div",
 ];
+
+/**
+ * ホーム画面で表示する演算選択肢。
+ *
+ * 登録順をそのままボタン順に使うため、子どもが見慣れた四則演算の後にミックスを置く。
+ */
 export const OPERATIONS: readonly Operation[] = [...CONCRETE_OPERATIONS, "mix"];
+
+/**
+ * ホーム画面で表示する難易度選択肢。
+ *
+ * 配列順を UI の並びとテストの網羅対象に共有し、登録漏れを防ぐ。
+ */
 export const LEVELS: readonly Level[] = ["easy", "normal", "hard"];
 
+/**
+ * 演算ごとの表示ラベルと記号。
+ *
+ * 問題文・選択ボタン・テストの読み取り対象を同じメタデータから作り、
+ * 記号の不一致で正答計算がずれるのを避ける。
+ */
 export const OPERATION_META: Record<
   Operation,
   { label: string; symbol: string }
@@ -27,16 +62,32 @@ export const OPERATION_META: Record<
   mix: { label: "ミックス", symbol: "＋−×÷" },
 };
 
+/**
+ * 難易度ごとの表示ラベルと星表現。
+ *
+ * 子ども向け UI では説明文より視覚的な段階表示を優先するため、星もデータとして持つ。
+ */
 export const LEVEL_META: Record<Level, { label: string; stars: string }> = {
   easy: { label: "やさしい", stars: "★" },
   normal: { label: "ふつう", stars: "★★" },
   hard: { label: "むずかしい", stars: "★★★" },
 };
 
+/**
+ * 問題の正答形式。
+ *
+ * あまりのあるわり算だけ商とあまりを別欄で入力するため、単一値と別型にして
+ * UI と reducer が入力欄の数を安全に分岐できるようにする。
+ */
 export type Answer =
   | { kind: "single"; value: number }
   | { kind: "quotient-remainder"; quotient: number; remainder: number };
 
+/**
+ * 画面に出す1問の完全なデータ。
+ *
+ * `op` は常に実演算へ解決済みにして、ミックスで出た問題も採点と表示で同じ経路を通す。
+ */
 export type Problem = {
   op: ConcreteOperation;
   a: number;
@@ -44,19 +95,38 @@ export type Problem = {
   answer: Answer;
 };
 
+/**
+ * 問題生成へ注入する乱数関数。
+ *
+ * `Math.random` を直接使わず引数にすることで、ユニットテストが出題範囲を決定的に検証できる。
+ */
 type Rng = () => number;
 
-/** min〜max(両端を含む)の整数を1つ引く。 */
+/**
+ * `min` から `max` まで両端を含む整数を1つ引く。
+ *
+ * 各生成器で同じ境界処理を使い、出題範囲の off-by-one を局所化する。
+ */
 function intBetween(min: number, max: number, rng: Rng): number {
   return min + Math.floor(rng() * (max - min + 1));
 }
 
+/**
+ * 商とあまりを持たない通常問題を組み立てる。
+ *
+ * 生成器が数値範囲だけに集中できるよう、四則演算の答え計算をこの関数へまとめる。
+ */
 function single(op: ConcreteOperation, a: number, b: number): Problem {
   const value =
     op === "add" ? a + b : op === "sub" ? a - b : op === "mul" ? a * b : a / b;
   return { op, a, b, answer: { kind: "single", value } };
 }
 
+/**
+ * たし算の問題を難易度別に生成する。
+ *
+ * ふつうでは繰り上がりのある組を直接作り、抽選し直しに頼らず仕様の範囲を保証する。
+ */
 function generateAdd(level: Level, rng: Rng): Problem {
   if (level === "easy") {
     return single("add", intBetween(0, 9, rng), intBetween(0, 9, rng));
@@ -71,6 +141,11 @@ function generateAdd(level: Level, rng: Rng): Problem {
   return single("add", intBetween(10, 99, rng), intBetween(10, 99, rng));
 }
 
+/**
+ * ひき算の問題を難易度別に生成する。
+ *
+ * 低学年向けに答えが負にならないことを生成時点で保証し、採点側に補正を持ち込まない。
+ */
 function generateSub(level: Level, rng: Rng): Problem {
   if (level === "easy") {
     const x = intBetween(0, 9, rng);
@@ -90,6 +165,11 @@ function generateSub(level: Level, rng: Rng): Problem {
   return single("sub", Math.max(x, y), Math.min(x, y));
 }
 
+/**
+ * かけ算の問題を難易度別に生成する。
+ *
+ * やさしいでは九九、以降は桁数を増やすだけにして、他演算より単純な段階設計にしている。
+ */
 function generateMul(level: Level, rng: Rng): Problem {
   if (level === "easy") {
     return single("mul", intBetween(1, 9, rng), intBetween(1, 9, rng));
@@ -100,6 +180,12 @@ function generateMul(level: Level, rng: Rng): Problem {
   return single("mul", intBetween(10, 99, rng), intBetween(10, 99, rng));
 }
 
+/**
+ * わり算の問題を難易度別に生成する。
+ *
+ * 0除算と意図しない小数答えを避けるため、割り切れる問題は商と除数から被除数を作る。
+ * hard だけは仕様どおり、あまりが1以上になる問題を返す。
+ */
 function generateDiv(level: Level, rng: Rng): Problem {
   if (level === "easy") {
     // 九九の逆。商と除数から被除数を作るので、必ず割り切れて0除算もない。
@@ -134,6 +220,11 @@ function generateDiv(level: Level, rng: Rng): Problem {
   }
 }
 
+/**
+ * 実演算から対応する生成器を引くためのディスパッチ表。
+ *
+ * `switch` を問題生成本体から外し、演算追加時に更新すべき場所を明確にする。
+ */
 const GENERATORS: Record<
   ConcreteOperation,
   (level: Level, rng: Rng) => Problem
@@ -147,8 +238,15 @@ const GENERATORS: Record<
 /**
  * 答えとして入力できる最大桁数 (FR-010)。あまりのあるわり算では「こたえ」(商)欄の
  * 上限を表し、「あまり」欄は REMAINDER_MAX_DIGITS を使う。
+ *
+ * 入力欄側で桁数を制限するため、問題生成範囲と同じ表をここに明示している。
  */
 export function maxAnswerDigits(op: ConcreteOperation, level: Level): number {
+  /**
+   * 演算×難易度ごとの入力上限。
+   *
+   * 生成器の範囲変更時に同時更新すべき仕様表として、関数内に閉じ込めている。
+   */
   const table: Record<ConcreteOperation, Record<Level, number>> = {
     add: { easy: 2, normal: 2, hard: 3 },
     sub: { easy: 1, normal: 1, hard: 2 },
@@ -158,7 +256,11 @@ export function maxAnswerDigits(op: ConcreteOperation, level: Level): number {
   return table[op][level];
 }
 
-/** あまりは除数(最大9)より小さいので常に1桁。 */
+/**
+ * あまり欄に入力できる最大桁数。
+ *
+ * 除数を最大9に固定しているため、正しいあまりは常に1桁で収まる。
+ */
 export const REMAINDER_MAX_DIGITS = 1;
 
 /**
@@ -173,9 +275,12 @@ export function generateProblem(
   exclude: Problem | null = null,
   rng: Rng = Math.random,
 ): Problem {
+  /** 現在の抽選で得た候補。除外対象と一致した場合だけ引き直す。 */
   let candidate: Problem;
+  /** 乱数の偏りや退行で無限ループしないための試行回数。 */
   let attempts = 0;
   do {
+    /** ミックス選択時に実際の出題演算へ解決した値。 */
     const op =
       operation === "mix"
         ? CONCRETE_OPERATIONS[intBetween(0, 3, rng)]
