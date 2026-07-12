@@ -91,4 +91,12 @@ describe("保存領域が使えない環境 (FR-032)", () => {
     expect(() => writeString("theme", "dark")).not.toThrow();
     expect(() => writeJSON("x", { a: 1 })).not.toThrow();
   });
+
+  it("JSON 化できない値でも例外を投げず黙って諦める", () => {
+    /** JSON.stringify が例外を投げる循環参照値。 */
+    const cyclic: { self?: unknown } = {};
+    cyclic.self = cyclic;
+    expect(() => writeJSON("x", cyclic)).not.toThrow();
+    expect(localStorage.getItem("toys:x")).toBeNull();
+  });
 });

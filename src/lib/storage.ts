@@ -68,8 +68,13 @@ export function readJSON<T>(
 /**
  * 任意の値を JSON 文字列として localStorage へ保存する。
  *
- * 保存可否の例外処理は `writeString` に集約し、呼び出し側は失敗時も通常どおり処理を続ける。
+ * 循環参照など JSON 化できない値では `JSON.stringify` 自体が例外を投げるため、ここでも
+ * 握りつぶして保存を諦め、呼び出し側は失敗時も通常どおり処理を続ける (FR-032)。
  */
 export function writeJSON(key: string, value: unknown): void {
-  writeString(key, JSON.stringify(value));
+  try {
+    writeString(key, JSON.stringify(value));
+  } catch {
+    // JSON 化できない値は保存しない。動作は継続する (FR-032)。
+  }
 }
