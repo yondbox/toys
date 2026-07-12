@@ -1,0 +1,598 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>たしざんタイムアタック プロトタイプ</title>
+<style>
+  :root {
+    --color-bg: #fdf9ee;
+    --color-text: #10233d;
+    --color-accent: #2b6cb0;
+    --color-accent-dark: #1a4c85;
+    --color-correct: #157a4a;
+    --color-correct-bg: #e3f6ec;
+    --color-wrong: #b32332;
+    --color-wrong-bg: #fbe4e6;
+    --color-panel: #ffffff;
+    --color-border: #cbd8e6;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html, body {
+    height: 100%;
+    margin: 0;
+  }
+
+  body {
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: "Hiragino Maru Gothic ProN", "Yu Gothic", "Segoe UI", sans-serif;
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+  }
+
+  .hidden {
+    display: none !important;
+  }
+
+  .topbar {
+    display: flex;
+    justify-content: flex-start;
+    padding: clamp(0.5rem, 2vw, 1rem);
+    min-height: 3.5rem;
+  }
+
+  .back-btn {
+    font-size: clamp(0.9rem, 2.2vw, 1.1rem);
+    padding: 0.6em 1.1em;
+    border-radius: 0.6em;
+    border: 2px solid var(--color-border);
+    background: var(--color-panel);
+    color: var(--color-text);
+    cursor: pointer;
+  }
+
+  .back-btn:hover {
+    border-color: var(--color-accent);
+  }
+
+  main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(1rem, 4vw, 2rem);
+  }
+
+  .screen {
+    width: 100%;
+    max-width: 640px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(1rem, 3vw, 1.75rem);
+    text-align: center;
+  }
+
+  /* ---- mode select ---- */
+
+  h1 {
+    font-size: clamp(1.6rem, 5vw, 2.6rem);
+    margin: 0;
+  }
+
+  .subtitle {
+    font-size: clamp(1rem, 2.6vw, 1.3rem);
+    margin: 0;
+    color: var(--color-text);
+  }
+
+  .mode-btn {
+    font-size: clamp(1.1rem, 3.2vw, 1.6rem);
+    font-weight: 700;
+    padding: 0.9em 1.4em;
+    border-radius: 1em;
+    border: none;
+    cursor: pointer;
+    color: #fff;
+    background: var(--color-accent);
+    width: 100%;
+  }
+
+  .mode-btn:hover,
+  .mode-btn:focus-visible {
+    background: var(--color-accent-dark);
+  }
+
+  .free-btn {
+    background: var(--color-correct);
+  }
+
+  .free-btn:hover,
+  .free-btn:focus-visible {
+    background: #0e5c37;
+  }
+
+  .timeattack-group {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .group-label {
+    font-size: clamp(0.95rem, 2.4vw, 1.2rem);
+    margin: 0;
+  }
+
+  .mode-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  /* ---- countdown ---- */
+
+  .countdown-number {
+    font-size: clamp(6rem, 30vw, 12rem);
+    font-weight: 800;
+    color: var(--color-accent);
+    line-height: 1;
+  }
+
+  .countdown-caption {
+    font-size: clamp(1rem, 3vw, 1.4rem);
+  }
+
+  /* ---- play ---- */
+
+  .play-screen {
+    position: relative;
+    width: 100%;
+  }
+
+  .hud {
+    display: flex;
+    justify-content: space-between;
+    font-size: clamp(1rem, 3vw, 1.4rem);
+    font-weight: 700;
+    margin-bottom: clamp(1rem, 3vw, 2rem);
+    padding: 0 0.25rem;
+  }
+
+  .equation {
+    font-size: clamp(2.6rem, 11vw, 5.5rem);
+    font-weight: 800;
+    letter-spacing: 0.05em;
+  }
+
+  .answer-box {
+    margin: 0.6em auto 0;
+    min-width: 3.2em;
+    min-height: 1.3em;
+    font-size: clamp(2.6rem, 11vw, 5.5rem);
+    font-weight: 800;
+    border: 0.08em solid var(--color-border);
+    border-radius: 0.25em;
+    background: var(--color-panel);
+    padding: 0.1em 0.5em;
+    display: inline-block;
+  }
+
+  .answer-box.empty::after {
+    content: "\00a0";
+  }
+
+  .hint {
+    margin-top: 1rem;
+    font-size: clamp(0.85rem, 2.2vw, 1.05rem);
+    color: #4a5a6d;
+  }
+
+  .feedback-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 1rem;
+  }
+
+  .feedback-overlay.correct {
+    background: var(--color-correct-bg);
+    color: var(--color-correct);
+  }
+
+  .feedback-overlay.wrong {
+    background: var(--color-wrong-bg);
+    color: var(--color-wrong);
+  }
+
+  .feedback-symbol {
+    font-size: clamp(5rem, 24vw, 10rem);
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .feedback-text {
+    font-size: clamp(1.4rem, 5vw, 2.4rem);
+    font-weight: 700;
+    margin-top: 0.2em;
+  }
+
+  /* ---- result ---- */
+
+  .result-summary {
+    font-size: clamp(1.4rem, 4vw, 2rem);
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .result-time {
+    font-size: clamp(1.1rem, 3vw, 1.5rem);
+    margin: 0;
+  }
+
+  .button-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .button-row .mode-btn {
+    width: auto;
+    flex: 1 1 12rem;
+  }
+
+  @media (max-width: 420px) {
+    .mode-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="back-btn hidden" id="btn-back" type="button">&larr; モードせんたくへ もどる</button>
+</div>
+
+<main>
+
+  <!-- モード選択画面 -->
+  <section class="screen" id="screen-mode-select">
+    <h1>たしざん タイムアタック</h1>
+    <p class="subtitle">あそびかたを えらんでね</p>
+
+    <button class="mode-btn free-btn" id="btn-free" type="button">じゆう れんしゅう</button>
+
+    <div class="timeattack-group">
+      <p class="group-label">タイムアタック（もんだいの かずを えらぶ）</p>
+      <div class="mode-grid">
+        <button class="mode-btn" data-count="10" type="button">10もん</button>
+        <button class="mode-btn" data-count="30" type="button">30もん</button>
+        <button class="mode-btn" data-count="50" type="button">50もん</button>
+        <button class="mode-btn" data-count="100" type="button">100もん</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- カウントダウン画面 -->
+  <section class="screen hidden" id="screen-countdown">
+    <p class="countdown-caption">まもなく はじまるよ</p>
+    <div class="countdown-number" id="countdown-number">3</div>
+  </section>
+
+  <!-- プレイ画面 -->
+  <section class="screen hidden" id="screen-play">
+    <div class="play-screen">
+      <div class="hud hidden" id="hud">
+        <span id="progress-display">0 / 10もん</span>
+        <span id="timer-display">0.0びょう</span>
+      </div>
+
+      <div class="equation" id="equation">3 + 4 =</div>
+      <div class="answer-box empty" id="answer-display"></div>
+      <p class="hint">すうじキーで こたえて、Enterで けってい・Escapeで けす</p>
+
+      <div class="feedback-overlay hidden" id="feedback-overlay">
+        <div class="feedback-symbol" id="feedback-symbol"></div>
+        <div class="feedback-text" id="feedback-text"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 結果画面 -->
+  <section class="screen hidden" id="screen-result">
+    <h1>けっか</h1>
+    <p class="result-summary" id="result-summary">10もん せいかい！</p>
+    <p class="result-time" id="result-time">きろく: 0.0びょう</p>
+    <div class="button-row">
+      <button class="mode-btn" id="btn-retry" type="button">もういちど ちょうせん</button>
+      <button class="mode-btn free-btn" id="btn-back-from-result" type="button">モードせんたくへ</button>
+    </div>
+  </section>
+
+</main>
+
+<script>
+(() => {
+  const FEEDBACK_MS = 800; // FR-008/009: 0.5〜1.5秒の範囲
+
+  const screens = {
+    modeSelect: document.getElementById('screen-mode-select'),
+    countdown: document.getElementById('screen-countdown'),
+    play: document.getElementById('screen-play'),
+    result: document.getElementById('screen-result'),
+  };
+
+  const btnBack = document.getElementById('btn-back');
+  const countdownNumberEl = document.getElementById('countdown-number');
+  const hudEl = document.getElementById('hud');
+  const progressDisplayEl = document.getElementById('progress-display');
+  const timerDisplayEl = document.getElementById('timer-display');
+  const equationEl = document.getElementById('equation');
+  const answerDisplayEl = document.getElementById('answer-display');
+  const feedbackOverlayEl = document.getElementById('feedback-overlay');
+  const feedbackSymbolEl = document.getElementById('feedback-symbol');
+  const feedbackTextEl = document.getElementById('feedback-text');
+  const resultSummaryEl = document.getElementById('result-summary');
+  const resultTimeEl = document.getElementById('result-time');
+
+  // state: 'mode-select' | 'countdown' | 'playing' | 'feedback' | 'result'
+  let state = 'mode-select';
+  let mode = null; // 'free' | number(10/30/50/100)
+  let target = 0;
+  let progress = 0;
+  let currentAnswer = '';
+  let currentProblem = null;
+  let lastSolvedProblem = null;
+  let startTime = null;
+  let timerInterval = null;
+  let countdownInterval = null;
+  let feedbackTimeout = null;
+
+  function showScreen(name) {
+    Object.values(screens).forEach((el) => el.classList.add('hidden'));
+    screens[name].classList.remove('hidden');
+    btnBack.classList.toggle('hidden', name === 'modeSelect');
+  }
+
+  function randomDigit() {
+    return Math.floor(Math.random() * 10);
+  }
+
+  function generateProblem() {
+    let a;
+    let b;
+    do {
+      a = randomDigit();
+      b = randomDigit();
+    } while (lastSolvedProblem && a === lastSolvedProblem.a && b === lastSolvedProblem.b);
+    return { a, b, answer: a + b };
+  }
+
+  function renderProblem() {
+    equationEl.textContent = `${currentProblem.a} + ${currentProblem.b} =`;
+  }
+
+  function renderAnswer() {
+    answerDisplayEl.textContent = currentAnswer;
+    answerDisplayEl.classList.toggle('empty', currentAnswer === '');
+  }
+
+  function renderProgress() {
+    progressDisplayEl.textContent = `${progress} / ${target}もん`;
+  }
+
+  function renderTimer(ms) {
+    timerDisplayEl.textContent = `${(ms / 1000).toFixed(1)}びょう`;
+  }
+
+  function startTimer() {
+    startTime = Date.now();
+    renderTimer(0);
+    timerInterval = setInterval(() => {
+      renderTimer(Date.now() - startTime);
+    }, 100);
+  }
+
+  function stopTimer() {
+    clearInterval(timerInterval);
+    timerInterval = null;
+    return Date.now() - startTime;
+  }
+
+  function clearFeedbackTimeout() {
+    if (feedbackTimeout) {
+      clearTimeout(feedbackTimeout);
+      feedbackTimeout = null;
+    }
+  }
+
+  function clearCountdownInterval() {
+    if (countdownInterval) {
+      clearInterval(countdownInterval);
+      countdownInterval = null;
+    }
+  }
+
+  function resetSessionState() {
+    clearFeedbackTimeout();
+    clearCountdownInterval();
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+    mode = null;
+    target = 0;
+    progress = 0;
+    currentAnswer = '';
+    currentProblem = null;
+    lastSolvedProblem = null;
+    feedbackOverlayEl.classList.add('hidden');
+    feedbackOverlayEl.classList.remove('correct', 'wrong');
+  }
+
+  function backToModeSelect() {
+    resetSessionState();
+    state = 'mode-select';
+    showScreen('modeSelect');
+  }
+
+  function beginPlaying() {
+    currentAnswer = '';
+    currentProblem = generateProblem();
+    renderProblem();
+    renderAnswer();
+    state = 'playing';
+    showScreen('play');
+  }
+
+  function startFreeMode() {
+    resetSessionState();
+    mode = 'free';
+    hudEl.classList.add('hidden');
+    beginPlaying();
+  }
+
+  function startTimeAttack(count) {
+    resetSessionState();
+    mode = 'timeattack';
+    target = count;
+    progress = 0;
+    hudEl.classList.remove('hidden');
+    renderProgress();
+    runCountdown(() => {
+      startTimer();
+      beginPlaying();
+    });
+  }
+
+  function runCountdown(onDone) {
+    state = 'countdown';
+    showScreen('countdown');
+    let value = 3;
+    countdownNumberEl.textContent = String(value);
+    countdownInterval = setInterval(() => {
+      value -= 1;
+      if (value === 0) {
+        clearCountdownInterval();
+        onDone();
+        return;
+      }
+      countdownNumberEl.textContent = String(value);
+    }, 1000);
+  }
+
+  function showFeedback(correct) {
+    feedbackOverlayEl.classList.remove('hidden', 'correct', 'wrong');
+    feedbackOverlayEl.classList.add(correct ? 'correct' : 'wrong');
+    feedbackSymbolEl.textContent = correct ? '〇' : '×';
+    feedbackTextEl.textContent = correct ? 'せいかい！' : 'もういちど';
+  }
+
+  function hideFeedback() {
+    feedbackOverlayEl.classList.add('hidden');
+    feedbackOverlayEl.classList.remove('correct', 'wrong');
+  }
+
+  function goToResult(elapsedMs) {
+    state = 'result';
+    resultSummaryEl.textContent = `${target}もん せいかい！`;
+    resultTimeEl.textContent = `きろく: ${(elapsedMs / 1000).toFixed(1)}びょう`;
+    hideFeedback();
+    showScreen('result');
+  }
+
+  function submitAnswer() {
+    if (state !== 'playing' || currentAnswer === '') {
+      return; // Edge case: 空欄の Enter は判定しない
+    }
+
+    const value = Number.parseInt(currentAnswer, 10);
+    const correct = value === currentProblem.answer;
+    state = 'feedback';
+    showFeedback(correct);
+
+    if (correct) {
+      lastSolvedProblem = currentProblem;
+
+      if (mode === 'timeattack') {
+        progress += 1;
+        renderProgress();
+
+        if (progress >= target) {
+          const elapsedMs = stopTimer();
+          feedbackTimeout = setTimeout(() => goToResult(elapsedMs), FEEDBACK_MS);
+          return;
+        }
+      }
+
+      feedbackTimeout = setTimeout(() => {
+        hideFeedback();
+        currentAnswer = '';
+        currentProblem = generateProblem();
+        renderProblem();
+        renderAnswer();
+        state = 'playing';
+      }, FEEDBACK_MS);
+    } else {
+      feedbackTimeout = setTimeout(() => {
+        hideFeedback();
+        currentAnswer = '';
+        renderAnswer();
+        state = 'playing';
+      }, FEEDBACK_MS);
+    }
+  }
+
+  document.getElementById('btn-free').addEventListener('click', startFreeMode);
+  document.querySelectorAll('.mode-grid [data-count]').forEach((btn) => {
+    btn.addEventListener('click', () => startTimeAttack(Number(btn.dataset.count)));
+  });
+  document.getElementById('btn-retry').addEventListener('click', () => startTimeAttack(target));
+  document.getElementById('btn-back-from-result').addEventListener('click', backToModeSelect);
+  btnBack.addEventListener('click', backToModeSelect);
+
+  document.addEventListener('keydown', (event) => {
+    if (state !== 'playing') {
+      return; // カウントダウン・判定表示・モード選択中はキー入力を無視
+    }
+
+    if (/^[0-9]$/.test(event.key)) {
+      event.preventDefault();
+      if (currentAnswer.length < 2) {
+        currentAnswer += event.key;
+        renderAnswer();
+      }
+      return;
+    }
+
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      submitAnswer();
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      currentAnswer = '';
+      renderAnswer();
+    }
+  });
+
+  showScreen('modeSelect');
+})();
+</script>
+
+</body>
+</html>

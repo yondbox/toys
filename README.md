@@ -1,36 +1,38 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# toys
 
-## Getting Started
+小さな Web アプリ（おもちゃ）を、1 ページ単位で追加できる Next.js アプリです。
 
-First, run the development server:
+## セットアップ
+
+Node.js 24 以上と pnpm を使用します。
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+開発サーバーは <http://localhost:3000> で確認できます。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 新しいおもちゃを追加する
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+slug は kebab-case で指定します。生成コマンドがページの雛形を作り、registry に登録します。
 
-## Learn More
+```bash
+pnpm new-toy <slug>
+```
 
-To learn more about Next.js, take a look at the following resources:
+おもちゃ固有のコンポーネント、ロジック、型、スタイル、テストは
+`src/app/(toys)/<slug>/` にコロケーションします。registry とトップページの一覧は手で編集しません。
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 検証
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+pnpm lint
+pnpm typecheck
+pnpm test:unit
+pnpm build
+pnpm test:e2e
+```
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+詳細な作業規約は [AGENTS.md](AGENTS.md)、Spec Kit の設計原則は
+[constitution.md](.specify/memory/constitution.md) を参照してください。
