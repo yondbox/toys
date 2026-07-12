@@ -148,13 +148,17 @@ export default function KeisanGamePage() {
     return () => window.clearTimeout(timer);
   }, [state]);
 
+  /** タイムアタック HUD を動かすべき状態か。入力のたびの interval 張り直しを避けるため、effect の依存はこの真偽値だけにする。 */
+  const timeAttackHudActive =
+    state.screen === "playing" && state.mode.kind === "timeAttack";
+
   /**
    * タイムアタック中の HUD 表示更新。
    *
    * 経過時間は reducer の時刻から計算し、この interval は 0.1 秒単位の再描画だけを担う。
    */
   useEffect(() => {
-    if (state.screen !== "playing" || state.mode.kind !== "timeAttack") {
+    if (!timeAttackHudActive) {
       return;
     }
     setNow(Date.now());
@@ -163,7 +167,7 @@ export default function KeisanGamePage() {
       TIMER_DISPLAY_INTERVAL_MS,
     );
     return () => window.clearInterval(timer);
-  }, [state]);
+  }, [timeAttackHudActive]);
 
   /**
    * タイムアタック結果を自己ベストへ反映する。
@@ -196,8 +200,13 @@ export default function KeisanGamePage() {
    * 物理キーボード入力を画面テンキーと同じ action へ写像する。
    *
    * 修飾キー付きショートカットはブラウザや OS の操作を妨げないよう無視する。
+   * reducer がゲーム入力を受け付けるのは playing 中だけなので、他の画面ではリスナー自体を
+   * 外し、フォーカス中ボタンの Enter 起動などブラウザ標準のキーボード操作を妨げない。
    */
   useEffect(() => {
+    if (state.screen !== "playing") {
+      return;
+    }
     /**
      * 数字・削除・クリア・確定キーだけをゲーム入力として処理する。
      *
@@ -229,7 +238,7 @@ export default function KeisanGamePage() {
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [state.screen]);
 
   /**
    * 現在選択中の演算・難易度でれんしゅうを開始する。

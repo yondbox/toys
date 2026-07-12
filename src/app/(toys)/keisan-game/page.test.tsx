@@ -181,6 +181,15 @@ describe("ホーム画面 (US1)", () => {
       "true",
     );
   });
+
+  it("モード選択中はゲーム用キーを横取りしない", () => {
+    render(<KeisanGamePage />);
+    // fireEvent は preventDefault されると false を返す。playing 以外では
+    // フォーカス中ボタンの Enter 起動などブラウザ標準の操作を妨げないこと。
+    expect(fireEvent.keyDown(window, { key: "Enter" })).toBe(true);
+    expect(fireEvent.keyDown(window, { key: "5" })).toBe(true);
+    expect(fireEvent.keyDown(window, { key: "Backspace" })).toBe(true);
+  });
 });
 
 describe("れんしゅうモード (US1)", () => {
