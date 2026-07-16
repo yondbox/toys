@@ -1,5 +1,10 @@
 import { expect, type Page, test } from "@playwright/test";
 
+/**
+ * モーフィングの巡回順に表示されるラベル。
+ *
+ * `SHAPE_SEQUENCE` と `SHAPES` の対応をブラウザ操作で確認するため、順序変更時は同期する。
+ */
 const SHAPE_LABELS = [
   "きゅうたい",
   "むすびめ",
@@ -8,6 +13,12 @@ const SHAPE_LABELS = [
   "もじ「あっ」",
 ] as const;
 
+/**
+ * Playwright ページで発生した console error と pageerror を収集する。
+ *
+ * @param page - 監視対象の Playwright ページ。
+ * @returns テスト終了時に検査するエラーメッセージ配列。
+ */
 function collectConsoleErrors(page: Page): string[] {
   const errors: string[] = [];
   page.on("console", (message) => {
@@ -21,6 +32,11 @@ function collectConsoleErrors(page: Page): string[] {
   return errors;
 }
 
+/**
+ * canvas ホストの中央付近をクリックして次の造形へ進める。
+ *
+ * @param page - 操作対象の Playwright ページ。
+ */
 async function clickMorphSurface(page: Page) {
   await page.getByTestId("particle-canvas-host").click({
     position: { x: 240, y: 240 },

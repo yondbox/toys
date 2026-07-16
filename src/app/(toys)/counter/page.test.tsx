@@ -2,6 +2,11 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import CounterPage from "./page";
 
+/**
+ * カウンターの現在値を status role から取得する。
+ *
+ * @returns `output` に表示されている文字列。要素がない場合は Testing Library が例外を投げる。
+ */
 function getCount() {
   return screen.getByRole("status").textContent;
 }

@@ -47,19 +47,36 @@ export const TIMER_DISPLAY_INTERVAL_MS = 100;
  * れんしゅうは終了操作まで続き、タイムアタックだけ目標問題数を持つため union で分ける。
  */
 export type GameMode =
-  | { kind: "practice" }
-  | { kind: "timeAttack"; target: TimeAttackTarget };
+  | {
+      /** 終了操作まで問題を続ける練習モード。 */
+      kind: "practice";
+    }
+  | {
+      /** 目標問題数を解いた時点で結果へ進むモード。 */
+      kind: "timeAttack";
+      /** タイムアタックで正解する必要がある問題数。 */
+      target: TimeAttackTarget;
+    };
 
 /**
  * 入力中の答え。あまりのあるわり算だけ「こたえ」(商)と「あまり」の2欄を持ち、
  * テンキー入力は focus の欄へ反映する (FR-006)。
  */
 export type AnswerInput =
-  | { kind: "single"; value: string }
   | {
+      /** 通常の四則演算で使う 1 欄入力。 */
+      kind: "single";
+      /** テンキーで入力中の文字列。未入力は空文字。 */
+      value: string;
+    }
+  | {
+      /** あまりのあるわり算で使う 2 欄入力。 */
       kind: "quotient-remainder";
+      /** 商の入力文字列。未入力は空文字。 */
       quotient: string;
+      /** あまりの入力文字列。未入力は空文字。 */
       remainder: string;
+      /** テンキー入力を反映する欄。 */
       focus: "quotient" | "remainder";
     };
 
@@ -85,10 +102,15 @@ export function emptyInputFor(problem: Problem): AnswerInput {
  * 画面だけが変わっても問題・入力・計測情報は引き継ぐため、共通部分を型でまとめる。
  */
 type SessionBase = {
+  /** 現在の問題で使う演算。ミックス時も実演算へ解決済み。 */
   operation: Operation;
+  /** 現在の問題生成難易度。 */
   level: Level;
+  /** 練習かタイムアタックかを表すプレイモード。 */
   mode: GameMode;
+  /** 現在表示・採点している問題。 */
   problem: Problem;
+  /** 現在のユーザー入力。問題形式と同じ kind を持つ。 */
   input: AnswerInput;
   /** 正解済み問題数 (FR-019: 正解した問題だけを数える) */
   solved: number;
@@ -107,17 +129,30 @@ type SessionBase = {
  * union として表す。
  */
 export type GameState =
-  | { screen: "mode-select" }
   | {
+      /** 演算・難易度・モードを選ぶ初期画面。 */
+      screen: "mode-select";
+    }
+  | {
+      /** タイムアタック開始前の 3 秒カウントダウン画面。 */
       screen: "countdown";
+      /** カウントダウン後に開始する演算。 */
       operation: Operation;
+      /** カウントダウン後に開始する難易度。 */
       level: Level;
+      /** タイムアタックの目標問題数。 */
       target: TimeAttackTarget;
+      /** 画面に表示する残りカウント。 */
       remaining: 1 | 2 | 3;
     }
-  | ({ screen: "playing" } & SessionBase)
   | ({
+      /** 問題を表示し、入力を受け付けている画面。 */
+      screen: "playing";
+    } & SessionBase)
+  | ({
+      /** 正解・不正解を短時間表示する画面。 */
       screen: "feedback";
+      /** 直前の採点結果。 */
       result: "correct" | "wrong";
       /** 正誤表示に入った時刻。タイムアタックではこの間を計測から除外する */
       feedbackStartedAt: number;
@@ -125,16 +160,25 @@ export type GameState =
       finishedAt: number | null;
     } & SessionBase)
   | {
+      /** 練習モード終了時に正解数を表示する画面。 */
       screen: "practice-summary";
+      /** 練習で選択していた演算。 */
       operation: Operation;
+      /** 練習で選択していた難易度。 */
       level: Level;
+      /** 練習中に正解した問題数。 */
       solved: number;
     }
   | {
+      /** タイムアタック完了後に記録を表示する画面。 */
       screen: "result";
+      /** 完了したタイムアタックの演算。 */
       operation: Operation;
+      /** 完了したタイムアタックの難易度。 */
       level: Level;
+      /** 完了したタイムアタックの目標問題数。 */
       target: TimeAttackTarget;
+      /** 正誤フィードバック時間を除いた所要時間（ミリ秒）。 */
       elapsedMs: number;
     };
 
@@ -146,27 +190,79 @@ export type GameState =
  */
 export type GameAction =
   | {
+      /** 練習モードを開始する。 */
       type: "START_PRACTICE";
+      /** 出題する演算。 */
       operation: Operation;
+      /** 出題する難易度。 */
       level: Level;
+      /** 最初に表示する問題。 */
       problem: Problem;
     }
   | {
+      /** タイムアタックのカウントダウンを開始する。 */
       type: "START_TIME_ATTACK";
+      /** 出題する演算。 */
       operation: Operation;
+      /** 出題する難易度。 */
       level: Level;
+      /** 正解する必要がある問題数。 */
       target: TimeAttackTarget;
     }
-  | { type: "COUNTDOWN_TICK"; now: number; problem: Problem }
-  | { type: "DIGIT"; digit: string }
-  | { type: "BACKSPACE" }
-  | { type: "CLEAR" }
-  | { type: "FOCUS_FIELD"; field: "quotient" | "remainder" }
-  | { type: "SUBMIT"; now: number }
-  | { type: "FEEDBACK_DONE"; now?: number; problem?: Problem }
-  | { type: "END_PRACTICE" }
-  | { type: "RETRY" }
-  | { type: "BACK_TO_MODE_SELECT" };
+  | {
+      /** カウントダウンを現在時刻まで進める。 */
+      type: "COUNTDOWN_TICK";
+      /** 判定に使う現在時刻（ミリ秒）。 */
+      now: number;
+      /** カウントダウン完了時に開始する最初の問題。 */
+      problem: Problem;
+    }
+  | {
+      /** テンキーの数字入力を反映する。 */
+      type: "DIGIT";
+      /** 入力する 1 桁の数字文字列。 */
+      digit: string;
+    }
+  | {
+      /** 現在 focus している入力欄から 1 文字削除する。 */
+      type: "BACKSPACE";
+    }
+  | {
+      /** 現在の問題の入力欄を空に戻す。 */
+      type: "CLEAR";
+    }
+  | {
+      /** あまりのあるわり算で入力対象欄を切り替える。 */
+      type: "FOCUS_FIELD";
+      /** 次にテンキー入力を反映する欄。 */
+      field: "quotient" | "remainder";
+    }
+  | {
+      /** 現在入力を採点する。 */
+      type: "SUBMIT";
+      /** 採点時刻（ミリ秒）。タイムアタックの終了時刻にも使う。 */
+      now: number;
+    }
+  | {
+      /** 正誤フィードバック画面から次の状態へ進む。 */
+      type: "FEEDBACK_DONE";
+      /** 次状態の時刻（ミリ秒）。省略時は feedback 開始時刻から算出する。 */
+      now?: number;
+      /** 次に表示する問題。不正解時や練習終了時は省略できる。 */
+      problem?: Problem;
+    }
+  | {
+      /** 練習モードを終了してサマリーへ進む。 */
+      type: "END_PRACTICE";
+    }
+  | {
+      /** 結果画面から同じ条件で再挑戦する。 */
+      type: "RETRY";
+    }
+  | {
+      /** どの画面からでもモード選択へ戻る。 */
+      type: "BACK_TO_MODE_SELECT";
+    };
 
 /**
  * ゲームの初期状態。

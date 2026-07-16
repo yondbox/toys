@@ -46,8 +46,9 @@
   move to `src/components/` or `src/lib/` names the concrete shared consumers.
 - **SOLID and readability**: Responsibilities and dependency boundaries are explicit; abstractions
   solve identified coupling; names and control flow use project vocabulary.
-- **Comments**: The plan identifies non-obvious constraints or contracts that require intent-level
-  comments and rejects comments that only restate code.
+- **Documentation comments**: Every new or changed declaration (public or private) will carry a
+  TSDoc comment per the `tsdoc-comments` skill; the plan identifies the non-obvious constraints,
+  contracts, and rationale to document, and rejects comments that only restate code.
 - **Vertical slices**: Delivery is split into independently verifiable user-story increments, not
   technical layers; shared prerequisites are minimal and name the slices they unblock.
 - **Fixed tooling**: The plan uses pnpm, Biome, strict TypeScript, the fixed Next.js/React/Tailwind

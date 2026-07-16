@@ -80,8 +80,20 @@ export const LEVEL_META: Record<Level, { label: string; stars: string }> = {
  * UI と reducer が入力欄の数を安全に分岐できるようにする。
  */
 export type Answer =
-  | { kind: "single"; value: number }
-  | { kind: "quotient-remainder"; quotient: number; remainder: number };
+  | {
+      /** 通常問題の単一回答。 */
+      kind: "single";
+      /** 採点で比較する数値。 */
+      value: number;
+    }
+  | {
+      /** あまりのあるわり算で使う回答。 */
+      kind: "quotient-remainder";
+      /** わり算の商。 */
+      quotient: number;
+      /** わり算のあまり。0 以上、割る数未満。 */
+      remainder: number;
+    };
 
 /**
  * 画面に出す1問の完全なデータ。
@@ -89,9 +101,13 @@ export type Answer =
  * `op` は常に実演算へ解決済みにして、ミックスで出た問題も採点と表示で同じ経路を通す。
  */
 export type Problem = {
+  /** 表示と採点に使う実演算。ミックスはここに入らない。 */
   op: ConcreteOperation;
+  /** 式の左辺。難易度ごとの範囲内の整数。 */
   a: number;
+  /** 式の右辺。わり算では 0 にならない。 */
   b: number;
+  /** 問題の正答。演算に応じて単一値または商・あまりになる。 */
   answer: Answer;
 };
 

@@ -4,6 +4,11 @@ import Link from "next/link";
 import { useState } from "react";
 import { ParticleCanvas } from "./ParticleCanvas";
 
+/**
+ * パーティクル・モーフィングのおもちゃページ。
+ *
+ * canvas 自体は装飾ではなく操作面でもあるため、WebGL 非対応時だけ fallback 文言へ切り替える。
+ */
 export default function ParticleMorphPage() {
   const [shapeLabel, setShapeLabel] = useState("きゅうたい");
   const [isUnsupported, setIsUnsupported] = useState(false);
@@ -28,7 +33,7 @@ export default function ParticleMorphPage() {
           >
             ← toys
           </Link>
-          <h1 className="mt-5 max-w-[13rem] text-3xl font-black leading-tight sm:max-w-none sm:text-5xl">
+          <h1 className="mt-5 max-w-52 text-3xl font-black leading-tight sm:max-w-none sm:text-5xl">
             パーティクル・モーフィング
           </h1>
           <p

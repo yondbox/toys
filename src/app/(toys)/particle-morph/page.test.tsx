@@ -2,6 +2,11 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import ParticleMorphPage from "./page";
 
+/**
+ * `ParticleCanvas` の副作用をページテストから制御するための hoisted mock 状態。
+ *
+ * Canvas/WebGL を起動せず、ラベル更新と非対応通知だけを検証する。
+ */
 const particleCanvasMock = vi.hoisted(() => ({
   label: "きゅうたい",
   unsupported: false,

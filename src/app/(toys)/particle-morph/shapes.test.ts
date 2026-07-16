@@ -6,6 +6,11 @@ import {
   SHAPES,
 } from "./shapes";
 
+/**
+ * 生成済み座標が共有 bounding radius を超えていないことを検証する。
+ *
+ * @param positions - x/y/z が 3 要素単位で並ぶ座標配列。
+ */
 function expectWithinBoundingRadius(positions: Float32Array) {
   for (let index = 0; index < positions.length; index += 3) {
     const radius = Math.hypot(

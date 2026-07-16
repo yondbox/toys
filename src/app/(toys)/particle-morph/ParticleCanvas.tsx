@@ -4,19 +4,43 @@ import { useEffect, useRef } from "react";
 import type { Theme } from "@/lib/theme";
 import { createParticleScene, type ParticleScene } from "./scene";
 
+/**
+ * パーティクル canvas がページへ通知するイベント。
+ */
 type ParticleCanvasProps = {
+  /** 現在造形のラベルが変わったときに呼ばれる。 */
   onShapeChange: (label: string) => void;
+  /** WebGL 初期化に失敗したときに呼ばれる。 */
   onUnsupported: () => void;
 };
 
+/**
+ * document に保存された現在テーマを読む。
+ *
+ * ThemeProvider と同じ `data-theme` を参照するため、React state を経由せず MutationObserver で同期する。
+ *
+ * @returns dark 以外は light として扱うテーマ値。
+ */
 function readDocumentTheme(): Theme {
   return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
 }
 
+/**
+ * OS の reduced motion 設定を読む。
+ *
+ * @returns reduce が指定されている場合は true。
+ */
 function readReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
+/**
+ * React と imperative な Three.js シーンを接続するホストコンポーネント。
+ *
+ * requestAnimationFrame は `ParticleScene` 側に閉じ込め、React は mount/unmount と外部設定変更だけを扱う。
+ *
+ * @param props - ページへ通知するラベル変更と非対応 fallback のコールバック。
+ */
 export function ParticleCanvas({
   onShapeChange,
   onUnsupported,

@@ -1,29 +1,22 @@
 <!--
 Sync Impact Report
-- Version change: unratified template -> 1.0.0
-- Modified principles: none (initial ratification)
-- Added principles:
-  - I. User Value and Toy Isolation
-  - II. Colocation and Human-Navigable Structure
-  - III. SOLID by Proportion
-  - IV. Readable Code
-  - V. Comments Preserve Intent
-  - VI. Vertical Slices
-- Added sections:
-  - Technical and Architectural Constraints
-  - Development Workflow and Quality Gates
-- Removed sections: none (template placeholders replaced)
+- Version change: 1.0.0 -> 1.1.0
+- Modified principles:
+  - V. Comments Preserve Intent -> V. Documentation Comments Preserve Intent
+    (obligations materially expanded: TSDoc documentation comments are now mandatory on
+    every declaration regardless of visibility; required content is defined as contract,
+    intent, source, and hazards; verbatim restatement is prohibited)
+- Added principles: none
+- Added sections: none
+- Removed sections: none
 - Templates requiring updates:
-  - ✅ .specify/templates/plan-template.md
-  - ✅ .specify/templates/spec-template.md
-  - ✅ .specify/templates/tasks-template.md
+  - ✅ .specify/templates/plan-template.md (Constitution Check "Comments" item updated)
+  - ✅ .specify/templates/spec-template.md (reviewed; no change required)
+  - ✅ .specify/templates/tasks-template.md (reviewed; no change required)
   - ✅ .specify/templates/checklist-template.md (reviewed; no change required)
-  - ✅ .specify/templates/commands/*.md (directory absent; no command templates to update)
 - Runtime guidance reviewed:
-  - ✅ AGENTS.md
-  - ✅ CONTRIBUTING.md (no change required)
-  - ✅ README.md
-  - ✅ .github/pull_request_template.md
+  - ✅ AGENTS.md (documentation-comment section added in the same change)
+  - ✅ .claude/skills/tsdoc-comments/SKILL.md (new; operationalizes Principle V)
 - Follow-up TODOs: none
 -->
 # Toys Constitution
@@ -80,16 +73,24 @@ project's domain vocabulary consistently.
 Rationale: code is maintained more often than it is written, so comprehension time is a primary
 engineering cost.
 
-### V. Comments Preserve Intent
+### V. Documentation Comments Preserve Intent
 
-Comments MUST be understandable to a human reader and MUST explain intent, constraints,
-trade-offs, or surprising behavior that the code cannot express clearly. Comments MUST NOT merely
-restate syntax. Any comment affected by a code change MUST be updated or removed in the same
-change. Public types or contracts whose correct use is not obvious MUST document units, formats,
-invariants, or failure behavior next to the declaration.
+Every declaration — classes, functions, methods, React components, custom hooks, types,
+constants, and configuration values — MUST carry a TSDoc documentation comment, regardless of
+visibility (exported or private). Documentation comments MUST serve the next maintainer, human
+or AI agent, by recording what the code cannot express: the contract (preconditions, units,
+value ranges, formats, failure behavior), the intent (why this approach was chosen and which
+alternatives were rejected), the source (which specification, issue, or external constraint
+drove the decision), and the hazards (what breaks easily when changed). Comments MUST NOT
+merely restate what the code already says. For a declaration so trivial that no rationale
+exists, the comment MUST state the contract only and MUST NOT fabricate a reason. Any comment
+affected by a code change MUST be updated or removed in the same change. Detailed writing rules
+and examples live in AGENTS.md and the `tsdoc-comments` skill
+(`.claude/skills/tsdoc-comments/SKILL.md`), which MUST remain consistent with this principle.
 
-Rationale: useful comments preserve context that code cannot; stale or redundant comments make
-the code harder to trust.
+Rationale: this codebase is written largely by AI agents and handed over between agents and
+humans; documentation comments are the durable carrier of intent that neither the code nor the
+chat history preserves, while stale or redundant comments make the code harder to trust.
 
 ### VI. Vertical Slices
 
@@ -135,7 +136,8 @@ progress tied to user value.
 - Changes and commits MUST be small and single-purpose. Commit messages MUST follow Conventional
   Commits and use the toy slug as scope for toy-specific changes.
 - Review MUST verify user-story acceptance, toy isolation, colocation, SOLID responsibility
-  boundaries, readable naming and flow, comment accuracy, and all quality gates.
+  boundaries, readable naming and flow, documentation-comment coverage and accuracy
+  (Principle V), and all quality gates.
 
 ## Governance
 
@@ -154,4 +156,4 @@ again after design. Every task list and pull request review MUST demonstrate com
 exception MUST be explicit in the plan's Complexity Tracking table and approved before
 implementation.
 
-**Version**: 1.0.0 | **Ratified**: 2026-07-06 | **Last Amended**: 2026-07-06
+**Version**: 1.1.0 | **Ratified**: 2026-07-06 | **Last Amended**: 2026-07-16

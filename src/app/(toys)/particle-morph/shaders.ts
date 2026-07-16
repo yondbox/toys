@@ -1,5 +1,10 @@
 import { DELAY_MAX } from "./morph";
 
+/**
+ * 粒子位置の補間、揺らぎ、ポインタ反発を GPU で計算する vertex shader。
+ *
+ * `DELAY_MAX` は CPU 側の進捗計算と同じ値を文字列へ埋め込み、ユニットテストで契約を確認できるようにする。
+ */
 export const vertexShader = /* glsl */ `
 attribute vec3 aPositionFrom;
 attribute vec3 aPositionTo;
@@ -42,6 +47,11 @@ void main() {
 }
 `;
 
+/**
+ * 円形粒子の core/halo とテーマ色の混色を行う fragment shader。
+ *
+ * 透明度がほぼ 0 の fragment は discard して、点群の四角い外枠が見えないようにする。
+ */
 export const fragmentShader = /* glsl */ `
 precision mediump float;
 
