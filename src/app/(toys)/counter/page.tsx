@@ -3,6 +3,11 @@
 import Link from "next/link";
 import { useState } from "react";
 
+/**
+ * 最小構成のおもちゃとして残しているカウンターページ。
+ *
+ * 新規 toy の UI パターン確認にも使うため、状態はページ内に閉じ込める。
+ */
 export default function CounterPage() {
   const [count, setCount] = useState(0);
 

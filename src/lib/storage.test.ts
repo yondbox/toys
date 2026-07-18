@@ -6,7 +6,10 @@ import { readJSON, readString, writeJSON, writeString } from "./storage";
  *
  * storage 層が keisan-game 固有型を import しないことを保つため、テスト内だけの最小型にしている。
  */
-type Best = { elapsedMs: number };
+type Best = {
+  /** JSON の型ガード対象にする保存時間（ミリ秒）。 */
+  elapsedMs: number;
+};
 
 /**
  * `Best` として読める値かを判定するテスト用型ガード。

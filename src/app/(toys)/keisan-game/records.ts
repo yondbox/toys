@@ -7,7 +7,10 @@ import type { Level, Operation } from "./operations";
  *
  * 保存値を最小限にして、将来表示文言が変わっても localStorage の互換性を保ちやすくする。
  */
-export type BestRecord = { elapsedMs: number };
+export type BestRecord = {
+  /** 正誤フィードバック時間を除いた自己ベスト時間（ミリ秒）。 */
+  elapsedMs: number;
+};
 
 /**
  * 演算・難易度・問題数の組み合わせごとの記録キーを作る。

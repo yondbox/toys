@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { toys } from "@/toys/registry";
 
+/**
+ * 登録済みのおもちゃを一覧表示するトップページ。
+ *
+ * 一覧は `src/toys/registry.ts` を正として生成し、個別ページの追加時にここを手編集しない。
+ */
 export default function Home() {
   return (
     <div className="flex flex-1 flex-col items-center bg-zinc-50 font-sans dark:bg-black">

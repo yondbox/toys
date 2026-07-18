@@ -23,6 +23,13 @@ export type Toy = {
  */
 export const toys: Toy[] = [
   {
+    slug: "particle-morph",
+    title: "パーティクル・モーフィング",
+    description:
+      "数万個の光る粒子が、球体から銀河や文字へ崩れて再集結する鑑賞型デモ。",
+    createdAt: "2026-07-15",
+  },
+  {
     slug: "keisan-game",
     title: "けいさんゲーム",
     description:

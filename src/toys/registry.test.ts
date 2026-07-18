@@ -3,6 +3,11 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { toys } from "./registry";
 
+/**
+ * toy ルートを置く App Router の route group ディレクトリ。
+ *
+ * registry と実ファイルの対応を検証するため、リポジトリルートからの絶対パスへ解決する。
+ */
 const toysDir = path.join(process.cwd(), "src", "app", "(toys)");
 
 describe("toys registry", () => {
