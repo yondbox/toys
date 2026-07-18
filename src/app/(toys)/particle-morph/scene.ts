@@ -6,6 +6,7 @@ import {
   createAutoAdvance,
   createIdleTransition,
   createShapeSequence,
+  DELAY_MAX,
   evaluateAutoAdvance,
   type MorphTransition,
   recordInteraction,
@@ -153,13 +154,16 @@ function positionFor(
 /**
  * 粒子ごとの開始遅延属性を生成する。
  *
- * @returns 各粒子の遅延。値域は 0 以上 0.4 未満。
+ * 遅延の上限は shader と CPU 側の進捗計算で共有する `DELAY_MAX` に揃える。ここで独自の
+ * 定数を持つと、`DELAY_MAX` を変更したときに stagger 分布だけ古い値のまま乖離する。
+ *
+ * @returns 各粒子の遅延。値域は 0 以上 `DELAY_MAX` 未満。
  */
 function createDelayAttribute(): Float32Array {
   const rng = createRng(73);
   const delays = new Float32Array(PARTICLE_COUNT);
   for (let index = 0; index < delays.length; index++) {
-    delays[index] = rng() * 0.4;
+    delays[index] = rng() * DELAY_MAX;
   }
   return delays;
 }
@@ -352,12 +356,25 @@ class ParticleSceneController implements ParticleScene {
   }
 
   /**
+   * 描画ループと共有するアニメーション時刻を返す。
+   *
+   * 描画ループは rAF の時刻を `FRAME_DELTA_LIMIT_MS` でクランプした `lastFrameAt` を進める。
+   * イベント発火時刻もこのクランプ済み時刻へ揃えないと、タブ復帰直後の追いつき期間に
+   * `startedAt`（実時刻）と進捗計算（クランプ時刻）が乖離し、モーフが固まる。
+   *
+   * @returns 直近フレームのクランプ済み時刻。初回フレーム前は `performance.now()`。
+   */
+  private currentTime(): number {
+    return this.lastFrameAt ?? performance.now();
+  }
+
+  /**
    * ユーザー操作として次の造形へ遷移する。
    *
-   * @param now - テストで時刻を固定するための任意時刻。省略時は `performance.now()`。
+   * @param now - テストで時刻を固定するための任意時刻。省略時は描画ループと同じクランプ済み時刻。
    * @returns 遷移を開始できた場合は true。すでに遷移中なら false。
    */
-  morphToNext = (now = performance.now()): boolean => {
+  morphToNext = (now = this.currentTime()): boolean => {
     this.autoAdvance = recordInteraction(this.autoAdvance, now);
     return this.startMorph(now);
   };
@@ -431,7 +448,7 @@ class ParticleSceneController implements ParticleScene {
    * @param clientY - PointerEvent の clientY。
    */
   movePointer = (clientX: number, clientY: number) => {
-    this.autoAdvance = recordInteraction(this.autoAdvance, performance.now());
+    this.autoAdvance = recordInteraction(this.autoAdvance, this.currentTime());
     if (this.reducedMotion) {
       this.pointerActive = false;
       this.cameraTargetX = 0;
@@ -459,7 +476,7 @@ class ParticleSceneController implements ParticleScene {
    * ポインタ離脱時に入力効果を停止する。
    */
   leavePointer = () => {
-    this.autoAdvance = recordInteraction(this.autoAdvance, performance.now());
+    this.autoAdvance = recordInteraction(this.autoAdvance, this.currentTime());
     this.pointerActive = false;
     this.cameraTargetX = 0;
     this.cameraTargetY = 0;
@@ -544,13 +561,17 @@ class ParticleSceneController implements ParticleScene {
   /**
    * requestAnimationFrame から呼ばれる描画ループ。
    *
-   * @param timestamp - rAF が渡す高精度時刻（ミリ秒）。自動進行判定と見た目用時刻の両方に使う。
+   * @param timestamp - rAF が渡す高精度時刻（ミリ秒）。クランプ前の生の入力にのみ使う。
    */
   private render = (timestamp: number) => {
     if (this.disposed) {
       return;
     }
 
+    // タブ復帰などで rAF の時刻が大きく飛んでも見た目と進行を破綻させないよう、
+    // フレーム差分を FRAME_DELTA_LIMIT_MS でクランプした時刻を唯一の時刻源にする。
+    // 進行・自動進行判定・モーフ開始時刻を全てこの animationNow に揃えることで、
+    // 復帰直後にモーフが即完了したり自動変形が暴発するのを防ぐ。
     const animationNow =
       this.lastFrameAt === null
         ? timestamp
@@ -558,18 +579,18 @@ class ParticleSceneController implements ParticleScene {
     this.lastFrameAt = animationNow;
     this.uniforms.uTime.value = animationNow / 1000;
 
-    this.refreshTransition(timestamp);
+    this.refreshTransition(animationNow);
 
     const targetStrength = this.pointerActive && !this.reducedMotion ? 1 : 0;
     const autoAdvance = evaluateAutoAdvance(
       this.autoAdvance,
       this.transition,
-      timestamp,
+      animationNow,
       this.reducedMotion,
     );
     this.autoAdvance = autoAdvance.autoAdvance;
     if (autoAdvance.shouldAdvance) {
-      this.startMorph(timestamp);
+      this.startMorph(animationNow);
     }
     this.repelStrength += (targetStrength - this.repelStrength) * 0.12;
     this.uniforms.uRepelStrength.value = this.repelStrength;
